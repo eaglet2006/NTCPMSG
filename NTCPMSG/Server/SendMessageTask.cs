@@ -68,19 +68,24 @@ namespace NTCPMSG.Server
             _Id = id;
 
             _Thread.SetProcessorAffinity(id % Environment.ProcessorCount);
-            //_Thread.Priority = ThreadPriority.Lowest;
+            _Thread.Priority = ThreadPriority.Lowest;
             _Thread.Start();
         }
 
         private void ThreadProc()
         {
-            DateTime last = DateTime.Now;
-            long sendMessageNumber = 0;
-            bool sleep1 = false;
+            //DateTime last = DateTime.Now;
+            //long sendMessageNumber = 0;
+            //bool sleep1 = false;
+            //int sendPerSec = 0;
+            //int mod = 10;
 
             while (true)
             {
                 Event.WaitOne();
+                
+                //sendPerSec++;
+
                 SCB[] scbs = _Listener.GetAllSCB();
 
                 lock (LockObj)
@@ -89,48 +94,53 @@ namespace NTCPMSG.Server
                     {
                         if (this == _Listener.GetTask(scb))
                         {
-                            sendMessageNumber += scb.SendFromQueue();
+                            scb.SendFromQueue();
+                            //sendMessageNumber += scb.SendFromQueue();
                         }
                     }
                 }
 
-                DateTime now = DateTime.Now;
+                Thread.Sleep(0);
 
-                double elapseMilliseconds = (now - last).TotalMilliseconds;
+                //DateTime now = DateTime.Now;
+
+                //double elapseMilliseconds = (now - last).TotalMilliseconds;
                 
-                if (elapseMilliseconds > 1000)
-                {
-                    double messagePerSecond = sendMessageNumber * 1000 / elapseMilliseconds;
-                    if (messagePerSecond > 1000)
-                    {
-                        int mod = (int) (10000 / messagePerSecond) + 1;
+                //if (elapseMilliseconds > 1000)
+                //{
+                //    double messagePerSecond = sendMessageNumber * 1000 / elapseMilliseconds;
 
-                        if (sendMessageNumber % mod == 0)
-                        {
-                            sleep1 = true;
-                        }
-                        else
-                        {
-                            sleep1 = false;
-                        }
-                    }
-                    else
-                    {
-                        sleep1 = false;
-                    }
+                //    mod = ((int)(10000 / messagePerSecond) + 1) * 10;
 
-                    sendMessageNumber = 0;
-                    last = DateTime.Now;
-                }
+                //    if (messagePerSecond > 1000)
+                //    {
+                //        sleep1 = true;
+                //    }
+                //    else
+                //    {
+                //        sleep1 = false;
+                //    }
 
-                if (sleep1)
-                {
-                    Thread.Sleep(1);
-                }
-                else
-                {
-                    Thread.Sleep(0);
-                }
+                //    sendPerSec = 0;
+                //    sendMessageNumber = 0;
+                //    last = DateTime.Now;
+                //}
+
+                //if (sleep1)
+                //{
+                //    if (sendPerSec % mod == 0)
+                //    {
+                //        Thread.Sleep(1);
+                //    }
+                //    else
+                //    {
+                //        Thread.Sleep(0);
+                //    }
+                //}
+                //else
+                //{
+                //    Thread.Sleep(0);
+                //}
             }
 
         }
