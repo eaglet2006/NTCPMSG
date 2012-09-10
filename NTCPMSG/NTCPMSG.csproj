@@ -55,6 +55,7 @@
     <Compile Include="Server\NTcpListener.cs" />
     <Compile Include="NTcpException.cs" />
     <Compile Include="Server\SendMessageTask.cs" />
+    <Compile Include="WinAPI.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

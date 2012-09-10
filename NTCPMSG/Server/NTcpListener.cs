@@ -30,23 +30,23 @@ namespace NTCPMSG.Server
         /// <summary>
         /// Get or set the capacity of send message task
         /// </summary>
-        public static int SendMessageTaskCapacity
-        {
-            get
-            {
-                return _SendMessageTaskCapacity;
-            }
+        //public static int SendMessageTaskCapacity
+        //{
+        //    get
+        //    {
+        //        return _SendMessageTaskCapacity;
+        //    }
 
-            set
-            {
-                _SendMessageTaskCapacity = value;
+        //    set
+        //    {
+        //        _SendMessageTaskCapacity = value;
 
-                if (_SendMessageTaskCapacity <= 0)
-                {
-                    _SendMessageTaskCapacity = 1;
-                }
-            }
-        }
+        //        if (_SendMessageTaskCapacity <= 0)
+        //        {
+        //            _SendMessageTaskCapacity = 1;
+        //        }
+        //    }
+        //}
 
         #endregion
 
@@ -339,7 +339,7 @@ namespace NTCPMSG.Server
 
         public NTcpListener(int workThreadNum, IPEndPoint bindIPEndPoint)
         {
-            _SendMessageTaskPool = new SendMessageTask[NTcpListener.SendMessageTaskCapacity];
+            _SendMessageTaskPool = new SendMessageTask[workThreadNum];
 
             InitSendMessageTaskPool(); //Init server side sendmenssage pool
 
