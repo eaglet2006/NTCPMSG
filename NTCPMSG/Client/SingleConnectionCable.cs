@@ -33,8 +33,9 @@ namespace NTCPMSG.Client
     {
         #region Fields
 
-        LinkedList<SingleConnection> _WorkingConnections;
-        Queue<SingleConnection> _PendingConnections;
+        SingleConnection _SyncConnection;
+        LinkedList<SingleConnection> _WorkingAsyncConnections;
+        Queue<SingleConnection> _PendingAsyncConnections;
         LinkedListNode<SingleConnection> _CurrentWorkingConnection;
 
         int _ASendCount = 0;
@@ -182,7 +183,7 @@ namespace NTCPMSG.Client
             {
                 lock (_LockObj)
                 {
-                    foreach (SingleConnection sConn in _WorkingConnections)
+                    foreach (SingleConnection sConn in _WorkingAsyncConnections)
                     {
                         if (sConn.Connected)
                         {
@@ -200,7 +201,7 @@ namespace NTCPMSG.Client
         #region Constractor
 
         public SingleConnectionCable(IPEndPoint remoteIPEndPoint)
-            :this(remoteIPEndPoint, 6)
+            :this(remoteIPEndPoint, 5)
         {
 
         }
@@ -214,8 +215,8 @@ namespace NTCPMSG.Client
                 throw new ArgumentException("Capacity must be large than 0");
             }
 
-            _WorkingConnections = new LinkedList<SingleConnection>();
-            _PendingConnections = new Queue<SingleConnection>();
+            _WorkingAsyncConnections = new LinkedList<SingleConnection>();
+            _PendingAsyncConnections = new Queue<SingleConnection>();
             _CurrentWorkingConnection = null;
 
             for (int i = 0; i < capacity; i++)
@@ -228,8 +229,16 @@ namespace NTCPMSG.Client
 
                 conn.RemoteDisconnected += InnerRemoteDisconnected;
 
-                _PendingConnections.Enqueue(conn);
+                _PendingAsyncConnections.Enqueue(conn);
             }
+
+            _SyncConnection = new SingleConnection(remoteIPEndPoint);
+
+            _SyncConnection.ErrorEventHandler += InnerErrorEventHandler;
+
+            _SyncConnection.ReceiveEventHandler += InnerReceiveEventHandler;
+
+            _SyncConnection.RemoteDisconnected += InnerRemoteDisconnected;
 
             _ConnectThread = new System.Threading.Thread(ConnectThreadProc);
             _ConnectThread.IsBackground = true;
@@ -268,7 +277,7 @@ namespace NTCPMSG.Client
         {
             lock (_LockObj)
             {
-                if (_WorkingConnections.Count <= 0)
+                if (_WorkingAsyncConnections.Count <= 0)
                 {
                     return null;
                 }
@@ -277,7 +286,7 @@ namespace NTCPMSG.Client
 
                 if (_CurrentWorkingConnection == null)
                 {
-                    _CurrentWorkingConnection = _WorkingConnections.First;
+                    _CurrentWorkingConnection = _WorkingAsyncConnections.First;
                     cur = _CurrentWorkingConnection;
                 }
                 else
@@ -286,7 +295,7 @@ namespace NTCPMSG.Client
 
                     if (sync)
                     {
-                        return _WorkingConnections.First.Value;
+                        return _WorkingAsyncConnections.First.Value;
                     }
                     else
                     {
@@ -303,21 +312,21 @@ namespace NTCPMSG.Client
 
                     if (cur == null)
                     {
-                        cur = _WorkingConnections.First;
+                        cur = _WorkingAsyncConnections.First;
                     }
                 }
 
-                while (!cur.Value.Connected && _WorkingConnections.Count > 0)
+                while (!cur.Value.Connected && _WorkingAsyncConnections.Count > 0)
                 {
                     LinkedListNode<SingleConnection> next = cur.Next;
                     
-                    _PendingConnections.Enqueue(cur.Value);
+                    _PendingAsyncConnections.Enqueue(cur.Value);
 
-                    _WorkingConnections.Remove(cur);
+                    _WorkingAsyncConnections.Remove(cur);
 
                     if (next == null)
                     {
-                        next = _WorkingConnections.First;
+                        next = _WorkingAsyncConnections.First;
 
                         if (next == null)
                         {
@@ -328,7 +337,7 @@ namespace NTCPMSG.Client
                     cur = next;
                 }
 
-                if (_WorkingConnections.Count <= 0)
+                if (_WorkingAsyncConnections.Count <= 0)
                 {
                     _CurrentWorkingConnection = null;
 
@@ -358,18 +367,32 @@ namespace NTCPMSG.Client
 
             try
             {
+                try
+                {
+                    if (!_SyncConnection.Connected)
+                    {
+                        _SyncConnection.Connect(millisecondsTimeout, true);
+                    }
+                }
+                catch (Exception e)
+                {
+                    OnErrorEvent("InnerConnect", e);
+
+                    return;
+                }
+
                 while (true)
                 {
                     SingleConnection pendingConn;
 
                     lock (_LockObj)
                     {
-                        if (_PendingConnections.Count <= 0)
+                        if (_PendingAsyncConnections.Count <= 0)
                         {
                             return;
                         }
 
-                        pendingConn = _PendingConnections.Dequeue();
+                        pendingConn = _PendingAsyncConnections.Dequeue();
                     }
 
                     try
@@ -378,12 +401,12 @@ namespace NTCPMSG.Client
 
                         lock (_LockObj)
                         {
-                            _WorkingConnections.AddLast(pendingConn);
+                            _WorkingAsyncConnections.AddLast(pendingConn);
                         }
                     }
                     catch (Exception e)
                     {
-                        _PendingConnections.Enqueue(pendingConn);
+                        _PendingAsyncConnections.Enqueue(pendingConn);
 
                         OnErrorEvent("InnerConnect", e);
 
@@ -439,9 +462,9 @@ namespace NTCPMSG.Client
                 throw new NTcpException("Can't operate SingleConnectionCable when it is closing.", ErrorCode.Closing);
             }
 
-            SingleConnection singleConn = GetAWorkingConnection(true);
+            SingleConnection singleConn = _SyncConnection;
 
-            if (singleConn == null)
+            if (!singleConn.Connected)
             {
                 throw new NTcpException("Tcp disconnected", ErrorCode.Disconnected);
             }
@@ -592,16 +615,19 @@ namespace NTCPMSG.Client
                      ErrorCode.AutoConnect);
             }
 
+            _SyncConnection.Disconnect();
+
             lock (_LockObj)
             {
-                foreach (SingleConnection conn in _WorkingConnections)
+
+                foreach (SingleConnection conn in _WorkingAsyncConnections)
                 {
                     conn.Disconnect();
 
-                    _PendingConnections.Enqueue(conn);
+                    _PendingAsyncConnections.Enqueue(conn);
                 }
 
-                _WorkingConnections.Clear();
+                _WorkingAsyncConnections.Clear();
                 _CurrentWorkingConnection = null;
 
                 OnDisconnectEvent();

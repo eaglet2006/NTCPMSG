@@ -121,7 +121,7 @@ namespace NTCPMSG.Client
         bool _Connected;
         bool _Closed;
 
-        object _LockObj;
+        object _LockObj = new object();
 
         object _ChannelSync;
         UInt32 _CurChannel;
@@ -199,9 +199,12 @@ namespace NTCPMSG.Client
                 {
                     if (_Connected)
                     {
-                        if (_SendMessageQueue.Closed)
+                        if (_SendMessageQueue != null)
                         {
-                            Close();
+                            if (_SendMessageQueue.Closed)
+                            {
+                                Close();
+                            }
                         }
                     }
 
@@ -241,8 +244,6 @@ namespace NTCPMSG.Client
             _SendMessageQueue = null;
             _Connected = false;
             _Closed = false;
-
-            _LockObj = new object();
 
             _ChannelSync = new object();
             _CurChannel = 0;
@@ -558,6 +559,8 @@ namespace NTCPMSG.Client
                 {
                 }
             }
+
+            Disconnect();
         }
 
         /// <summary>
@@ -613,8 +616,27 @@ namespace NTCPMSG.Client
         /// <param name="millisecondsTimeout">connect timeout, in millisecond</param>
         public void Connect(int millisecondsTimeout)
         {
+            Connect(millisecondsTimeout, false);
+        }
+
+        /// <summary>
+        /// Connect to server
+        /// </summary>
+        /// <param name="millisecondsTimeout">connect timeout, in millisecond</param>
+        /// <param name="setThreadAffinityMask">need set the thread affinity mask</param>
+        public void Connect(int millisecondsTimeout, bool setThreadAffinityMask)
+        {
             lock (_ConnectLock)
             {
+                if (Connected)
+                {
+                    return;
+                }
+                else
+                {
+                    Disconnect();
+                }
+
                 if (millisecondsTimeout < 0)
                 {
                     throw new ArgumentException("milliseconds can't be negative");
@@ -646,7 +668,7 @@ namespace NTCPMSG.Client
                 _SCB.OnError = OnErrorEvent;
                 _SCB.OnDisconnect = OnDisconnectEvent;
 
-                _SendMessageQueue = new SendMessageQueue(OnReadyToSend);
+                _SendMessageQueue = new SendMessageQueue(OnReadyToSend, setThreadAffinityMask);
 
                 Connected = true;
             }
@@ -682,9 +704,25 @@ namespace NTCPMSG.Client
 
             }
 
-            if (_SendMessageQueue != null)
+            try
             {
-                _SendMessageQueue.Join(10000);
+                if (_SendMessageQueue != null)
+                {
+                    try
+                    {
+                        if (!_SendMessageQueue.Join(10000))
+                        {
+                            _SendMessageQueue.Abort();
+                        }
+                    }
+                    catch
+                    {
+                        _SendMessageQueue.Abort();
+                    }
+                }
+            }
+            catch
+            {
             }
 
             try

@@ -12,5 +12,8 @@ namespace NTCPMSG
            bool DisablePriorityBoost);
         [DllImport("kernel32.dll")]
         internal static extern IntPtr GetCurrentThread();
+
+        [DllImport("kernel32.dll")]
+        internal static extern IntPtr SetThreadAffinityMask(IntPtr hThread, IntPtr dwThreadAffinityMask);
     }
 }

@@ -39,6 +39,8 @@ namespace NTCPMSG.Client
 
         private bool _Closing = false;
         private bool _CLosed = false;
+        private readonly bool _SetThreadAffinityMask = false;
+        private readonly IntPtr _ThreadAffinityMask;
 
         private long _BufferLength = 0;
 
@@ -61,7 +63,6 @@ namespace NTCPMSG.Client
             }
         }
 
-
         internal bool Closed
         {
             get
@@ -81,19 +82,50 @@ namespace NTCPMSG.Client
             }
         }
 
-        internal SendMessageQueue(DeleReadyToSend onReadyToSend)
+        IntPtr GetARandomProcessorAffinity()
         {
+            Random rand = new Random();
+            int r = rand.Next(Environment.ProcessorCount);
+            long shift = 0x0000000000000001;
+
+            for (int i = 0; i < r; i++)
+            {
+                shift <<= 1;
+            }
+
+            return (IntPtr)shift;
+        }
+
+        internal SendMessageQueue(DeleReadyToSend onReadyToSend, bool setThreadAffinityMask)
+        {
+            _SetThreadAffinityMask = setThreadAffinityMask;
+
+            if (setThreadAffinityMask)
+            {
+                _ThreadAffinityMask = GetARandomProcessorAffinity();
+            }
+            else
+            {
+                _ThreadAffinityMask = (IntPtr)ProcessorThread.FullProcessorAffinity;
+            }
+
             OnReadyToSend = onReadyToSend;
             _Queue = new Queue<Message>();
             _MStream = new System.IO.MemoryStream(MStreamCapacity);
             _Event = new AutoResetEvent(false);
             _Thread = new Thread(ThreadProc);
+            _Thread.Name = "SendMessageQueue";
             _Thread.IsBackground = true;
             _Thread.Start();
         }
 
         internal void ASend(MessageFlag flag, UInt32 evt, UInt16 group, UInt32 channel, byte[] data)
         {
+            if (_SetThreadAffinityMask && (flag | MessageFlag.Sync) != 0)
+            {
+                WinAPI.SetThreadAffinityMask(WinAPI.GetCurrentThread(), _ThreadAffinityMask);
+            }
+
             while (BufferLength > 10 * 1024 * 1024)
             {
                 System.Threading.Thread.Sleep(1);
@@ -117,6 +149,13 @@ namespace NTCPMSG.Client
 
         private void ThreadProc()
         {
+            if (_SetThreadAffinityMask)
+            {
+                WinAPI.SetThreadAffinityMask(WinAPI.GetCurrentThread(), _ThreadAffinityMask);
+                WinAPI.SetThreadPriorityBoost(WinAPI.GetCurrentThread(), false);
+                _Thread.Priority = ThreadPriority.Lowest;
+            }
+
             while (true)
             {
                 _Event.WaitOne();
@@ -216,9 +255,14 @@ namespace NTCPMSG.Client
             }
         }
 
-        internal void Join(int millisecondsTimeout)
+        internal bool Join(int millisecondsTimeout)
         {
-            _Thread.Join(millisecondsTimeout);
+            return _Thread.Join(millisecondsTimeout);
+        }
+
+        internal void Abort()
+        {
+            _Thread.Abort();
         }
              
 
