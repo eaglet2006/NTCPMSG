@@ -38,6 +38,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Client\ProcessorCombine.cs" />
     <Compile Include="Client\SingleConnection.cs" />
     <Compile Include="Client\SingleConnectionCable.cs" />
     <Compile Include="Event\AcceptEventArgs.cs" />

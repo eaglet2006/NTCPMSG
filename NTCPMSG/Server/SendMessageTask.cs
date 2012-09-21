@@ -80,7 +80,12 @@ namespace NTCPMSG.Server
             //int sendPerSec = 0;
             //int mod = 10;
 
-            WinAPI.SetThreadPriorityBoost(WinAPI.GetCurrentThread(), true);
+            IntPtr handle = WinAPI.OpenThread(WinAPI.ThreadAccess.SET_INFORMATION | WinAPI.ThreadAccess.QUERY_INFORMATION, false,
+                WinAPI.GetCurrentThreadId());
+
+            WinAPI.SetThreadPriorityBoost(handle, true);
+
+            WinAPI.CloseHandle(handle);
 
             while (true)
             {

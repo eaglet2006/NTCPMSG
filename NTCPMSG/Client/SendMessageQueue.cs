@@ -40,7 +40,28 @@ namespace NTCPMSG.Client
         private bool _Closing = false;
         private bool _CLosed = false;
         private readonly bool _SetThreadAffinityMask = false;
-        private readonly IntPtr _ThreadAffinityMask;
+
+        private object _ProcessorCombineLock = new object();
+        private ProcessorCombine _ProcessorCombine;
+
+        private ProcessorCombine PCombine
+        {
+            get
+            {
+                lock (_ProcessorCombineLock)
+                {
+                    return _ProcessorCombine;
+                }
+            }
+
+            set
+            {
+                lock (_ProcessorCombineLock)
+                {
+                    _ProcessorCombine = value;
+                }
+            }
+        }
 
         private long _BufferLength = 0;
 
@@ -100,15 +121,6 @@ namespace NTCPMSG.Client
         {
             _SetThreadAffinityMask = setThreadAffinityMask;
 
-            if (setThreadAffinityMask)
-            {
-                _ThreadAffinityMask = GetARandomProcessorAffinity();
-            }
-            else
-            {
-                _ThreadAffinityMask = (IntPtr)ProcessorThread.FullProcessorAffinity;
-            }
-
             OnReadyToSend = onReadyToSend;
             _Queue = new Queue<Message>();
             _MStream = new System.IO.MemoryStream(MStreamCapacity);
@@ -123,7 +135,10 @@ namespace NTCPMSG.Client
         {
             if (_SetThreadAffinityMask && (flag | MessageFlag.Sync) != 0)
             {
-                WinAPI.SetThreadAffinityMask(WinAPI.GetCurrentThread(), _ThreadAffinityMask);
+                if (PCombine != null)
+                {
+                    PCombine.Hit();
+                }
             }
 
             while (BufferLength > 10 * 1024 * 1024)
@@ -151,8 +166,8 @@ namespace NTCPMSG.Client
         {
             if (_SetThreadAffinityMask)
             {
-                WinAPI.SetThreadAffinityMask(WinAPI.GetCurrentThread(), _ThreadAffinityMask);
-                WinAPI.SetThreadPriorityBoost(WinAPI.GetCurrentThread(), false);
+                PCombine = new ProcessorCombine(WinAPI.GetCurrentThreadId());
+                
                 _Thread.Priority = ThreadPriority.Lowest;
             }
 
