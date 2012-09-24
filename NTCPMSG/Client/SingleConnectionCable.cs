@@ -372,6 +372,15 @@ namespace NTCPMSG.Client
                     if (!_SyncConnection.Connected)
                     {
                         _SyncConnection.Connect(millisecondsTimeout, true);
+
+                        ulong processAffinity = (ulong)System.Diagnostics.Process.GetCurrentProcess().ProcessorAffinity;
+
+                        byte[] ret = _SyncConnection.SSend(MessageFlag.Inner, (uint)InnerEvent.GetProcessorId,
+                            LittleEndianBitConverter.GetBytes(processAffinity));
+
+                        int processorId = LittleEndianBitConverter.ToInt32(ret, 0);
+
+                        _SyncConnection.SetProcessorId(processorId);
                     }
                 }
                 catch (Exception e)

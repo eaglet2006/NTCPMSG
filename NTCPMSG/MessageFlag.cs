@@ -28,5 +28,6 @@ namespace NTCPMSG
         Sync = 0x01, // Send syncronization message
         EncryptToServer = 0x02, //Send encrypt message to server.
         EncryptToClient = 0x04, //Send encrypt message to client.
+        Inner= 0x08, //inner message
     }
 }

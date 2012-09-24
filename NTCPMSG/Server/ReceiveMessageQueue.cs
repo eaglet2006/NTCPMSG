@@ -161,6 +161,7 @@ namespace NTCPMSG.Server
         #endregion
 
         #region Private methods
+
         /// <summary>
         /// Process message
         /// </summary>

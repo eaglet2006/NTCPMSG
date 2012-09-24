@@ -94,24 +94,16 @@ namespace NTCPMSG.Client
 
         readonly uint _SendMessageQueueThreadId;
 
-        static IntPtr GetARandomProcessorAffinity()
+        static IntPtr GetProcessorAffinity(int processorId)
         {
-            Random rand = new Random();
             long shift;
+            shift = 0x0000000000000001;
+            int r = processorId;
 
-            long processAffinity = (long)Process.GetCurrentProcess().ProcessorAffinity;
-
-            do
+            for (int i = 0; i < r; i++)
             {
-                shift = 0x0000000000000001;
-                int r = rand.Next(Environment.ProcessorCount);
-
-                for (int i = 0; i < r; i++)
-                {
-                    shift <<= 1;
-                }
+                shift <<= 1;
             }
-            while ((processAffinity & shift) == 0); //not match with the process affinity
 
             return (IntPtr)shift;
         }
@@ -122,23 +114,14 @@ namespace NTCPMSG.Client
 
         private Dictionary<uint, ThreadInfo> _ThreadIdToThreadInfo;
 
-        PerformanceCounter[] processorCounters;
-
         private void ThreadProc()
         {
-            try
-            {
-                processorCounters = new PerformanceCounter[Environment.ProcessorCount];
+            IntPtr handle = WinAPI.OpenThread(WinAPI.ThreadAccess.SET_INFORMATION | WinAPI.ThreadAccess.QUERY_INFORMATION, false,
+                WinAPI.GetCurrentThreadId());
 
-                for (int i = 0; i < processorCounters.Length; i++)
-                {
-                    processorCounters[i] = new PerformanceCounter("Processor", "% Processor Time", i.ToString());
-                }
-            }
-            catch
-            {
-                processorCounters = null;
-            }
+            IntPtr last = WinAPI.SetThreadAffinityMask(handle, _ThreadAffinityMask);
+
+            WinAPI.CloseHandle(handle);
 
             while (true)
             {
@@ -174,16 +157,14 @@ namespace NTCPMSG.Client
             }
         }
 
-        internal ProcessorCombine(uint sendMessageQueueThreadId)
+        internal ProcessorCombine(uint sendMessageQueueThreadId, int processorId)
         {
             _SendMessageQueueThreadId = sendMessageQueueThreadId;
 
             IntPtr handle = WinAPI.OpenThread(WinAPI.ThreadAccess.SET_INFORMATION | WinAPI.ThreadAccess.QUERY_INFORMATION, false,
                 sendMessageQueueThreadId);
 
-            _ThreadAffinityMask = GetARandomProcessorAffinity();
-
-            WinAPI.SetThreadPriorityBoost(handle, false);
+            _ThreadAffinityMask = GetProcessorAffinity(processorId);
 
             if (WinAPI.SetThreadAffinityMask(handle, _ThreadAffinityMask) == IntPtr.Zero)
             {

@@ -176,6 +176,7 @@ namespace NTCPMSG.Server
         object _ChannelSync = new object();
         UInt32 _CurChannel = int.MaxValue;
 
+        AllocClientProcessor _AllocClientProcessor = new AllocClientProcessor();
         #endregion
 
         #region Properties
@@ -224,6 +225,35 @@ namespace NTCPMSG.Server
             }
         }
 
+        private void RemoteClientPID(IPAddress ipAddress, int scbId)
+        {
+            _AllocClientProcessor.RemoveProcessorId(ipAddress, scbId);
+        }
+
+        private void ProcInnerMessage(Event.ReceiveEventArgs message)
+        {
+            try
+            {
+                switch ((InnerEvent)message.Event)
+                {
+                    case InnerEvent.GetProcessorId:
+                        {
+                            ulong mask = LittleEndianBitConverter.ToUInt64(message.Data, 0);
+
+                            int pId = _AllocClientProcessor.GetProcessorId(((IPEndPoint)message.RemoteIPEndPoint).Address,
+                                mask, message.SCBID);
+
+                            message.ReturnData = LittleEndianBitConverter.GetBytes(pId);
+                        }
+                        break;
+
+                }
+            }
+            catch (Exception e)
+            {
+                OnErrorEvent("ProcInnerMessage", e);
+            }
+        }
 
         private void AsyncAccept(IAsyncResult iar)
         {
@@ -408,6 +438,8 @@ namespace NTCPMSG.Server
 
         private void OnDisconnectEvent(SCB scb)
         {
+            RemoteClientPID(scb.RemoteIPEndPoint.Address, scb.Id);
+
             RemoteSCB(scb);
 
             EventHandler<Event.DisconnectEventArgs> disconnectEventHandler = RemoteDisconnected;
@@ -428,7 +460,25 @@ namespace NTCPMSG.Server
         {
             EventHandler<Event.ReceiveEventArgs> receiveEventHandler = DataReceived;
 
-            if (receiveEventHandler != null)
+            if ((message.Flag & MessageFlag.Inner) != 0)
+            {
+                //Inner message
+
+                ProcInnerMessage(message);
+
+                if ((message.Flag & MessageFlag.Sync) != 0)
+                {
+                    //Sync message
+                    if (message.ReturnData == null)
+                    {
+                        message.ReturnData = new byte[0];
+                    }
+
+                    InnerASendResponse((IPEndPoint)message.RemoteIPEndPoint, MessageFlag.Sync,
+                        message.Event, message.Group, message.Channel, message.ReturnData);
+                }
+            }
+            else if (receiveEventHandler != null)
             {
                 receiveEventHandler(this, message);
 
@@ -468,8 +518,10 @@ namespace NTCPMSG.Server
 
             if (receiveEventHandler != null)
             {
-                _WorkThreads[scb.Id % _WorkThreads.Length].ASendMessage(
-                   new Event.ReceiveEventArgs(scb.Id, scb.RemoteIPEndPoint, flag, evt, group, channel, data));
+                Event.ReceiveEventArgs args = new Event.ReceiveEventArgs(scb.Id, 
+                    scb.RemoteIPEndPoint, flag, evt, group, channel, data);
+
+                _WorkThreads[scb.Id % _WorkThreads.Length].ASendMessage(args);
             }
 
         }

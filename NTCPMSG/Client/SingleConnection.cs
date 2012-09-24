@@ -371,6 +371,17 @@ namespace NTCPMSG.Client
         }
 
         /// <summary>
+        /// Synchronously sends data to the remote host specified in the RemoteIPEndPoint
+        /// </summary>
+        /// <param name="evt">message event</param>
+        /// <param name="data">An array of type Byte  that contains the data to be sent. </param>
+        /// <returns>An array of type Byte  that contains the data that return from remote host</returns>
+        internal byte[] SSend(MessageFlag flag, UInt32 evt, byte[] data)
+        {
+            return InnerSSend(MessageFlag.Sync | flag, evt, 0, data, Timeout.Infinite);
+        }
+
+        /// <summary>
         /// Send syncronization message
         /// </summary>
         /// <param name="evt">event</param>
@@ -431,6 +442,10 @@ namespace NTCPMSG.Client
             }
         }
 
+        internal void SetProcessorId(int processorId)
+        {
+            _SendMessageQueue.SetProcessorId(processorId);
+        }
 
         #endregion
 

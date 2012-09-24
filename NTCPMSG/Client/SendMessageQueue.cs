@@ -43,6 +43,26 @@ namespace NTCPMSG.Client
 
         private object _ProcessorCombineLock = new object();
         private ProcessorCombine _ProcessorCombine;
+        private uint _CurThreadId = 0;
+
+        private uint CurThreadId
+        {
+            get
+            {
+                lock (_ProcessorCombineLock)
+                {
+                    return _CurThreadId;
+                }
+            }
+
+            set
+            {
+                lock (_ProcessorCombineLock)
+                {
+                    _CurThreadId = value;
+                }
+            }
+        }
 
         private ProcessorCombine PCombine
         {
@@ -103,20 +123,6 @@ namespace NTCPMSG.Client
             }
         }
 
-        IntPtr GetARandomProcessorAffinity()
-        {
-            Random rand = new Random();
-            int r = rand.Next(Environment.ProcessorCount);
-            long shift = 0x0000000000000001;
-
-            for (int i = 0; i < r; i++)
-            {
-                shift <<= 1;
-            }
-
-            return (IntPtr)shift;
-        }
-
         internal SendMessageQueue(DeleReadyToSend onReadyToSend, bool setThreadAffinityMask)
         {
             _SetThreadAffinityMask = setThreadAffinityMask;
@@ -166,9 +172,8 @@ namespace NTCPMSG.Client
         {
             if (_SetThreadAffinityMask)
             {
-                PCombine = new ProcessorCombine(WinAPI.GetCurrentThreadId());
-                
-                _Thread.Priority = ThreadPriority.Lowest;
+                //_Thread.Priority = ThreadPriority.Lowest;
+                CurThreadId = WinAPI.GetCurrentThreadId();
             }
 
             while (true)
@@ -268,6 +273,16 @@ namespace NTCPMSG.Client
                     Thread.Sleep(1);
                 }
             }
+        }
+
+        internal void SetProcessorId(int processorId)
+        {
+            while (CurThreadId == 0)
+            {
+                Thread.Sleep(1); 
+            }
+
+            PCombine = new ProcessorCombine(CurThreadId, processorId);
         }
 
         internal bool Join(int millisecondsTimeout)
