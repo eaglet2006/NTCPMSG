@@ -10,6 +10,33 @@ namespace Example
 {
     class Client
     {
+        /// <summary>
+        /// DataReceived event will be called back when server get message from client which connect to.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        static void ReceiveEventHandler(object sender, ReceiveEventArgs args)
+        {
+            switch ((Event)args.Event)
+            {
+                case Event.PushMessage:
+                    //Get OneWay message from server
+                    if (args.Data != null)
+                    {
+                        try
+                        {
+                            Console.WriteLine(Encoding.UTF8.GetString(args.Data));
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e);
+                        }
+                    }
+                    break;
+            }
+
+        }
+
         public static void Run(string[] args)
         {
             Console.Write("Please input server IP Address [127.0.0.1]:");
@@ -31,6 +58,7 @@ namespace Example
                 //ipAddress and port (2500).
                 SingleConnection client =
                     new SingleConnection(new IPEndPoint(IPAddress.Parse(ipAddress), 2500));
+                client.ReceiveEventHandler += new EventHandler<ReceiveEventArgs>(ReceiveEventHandler);
 
                 client.Connect();
 
@@ -59,6 +87,9 @@ namespace Example
                     Console.WriteLine(e);
                 }
 
+                Console.Write("Waitting for 10 seconds to finish simple connection example.");
+                System.Threading.Thread.Sleep(10000);
+
                 client.Close();
 
                 //************* SingleConnectionCable Example *****************
@@ -70,7 +101,8 @@ namespace Example
                 //by default, SingleConnectionCable will try to connect automatically and including 6 tcp connections.
                 SingleConnectionCable clientCable =
                     new SingleConnectionCable(new IPEndPoint(IPAddress.Parse(ipAddress), 2500));
-
+                
+                clientCable.ReceiveEventHandler += new EventHandler<ReceiveEventArgs>(ReceiveEventHandler);
                 clientCable.Connect();
 
                 Console.WriteLine("ASend: Hello world! I am Cable");

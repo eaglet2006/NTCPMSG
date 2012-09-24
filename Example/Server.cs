@@ -25,7 +25,7 @@ namespace Example
                     {
                         try
                         {
-                            Encoding.UTF8.GetString(args.Data);
+                            Console.WriteLine(Encoding.UTF8.GetString(args.Data));
                         }
                         catch (Exception e)
                         {
@@ -93,7 +93,31 @@ namespace Example
             listener.Listen();
 
             Console.WriteLine("Listening...");
-            System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
+
+            while (true)
+            {
+                System.Threading.Thread.Sleep(5 * 1000);
+
+                //Push message to client example.
+                foreach (IPEndPoint clientIpEndPoint in listener.GetRemoteEndPoints())
+                {
+                    bool successful = listener.ASend(clientIpEndPoint, (uint)Event.PushMessage,
+                        Encoding.UTF8.GetBytes("I am from server!"));
+
+                    if (successful)
+                    {
+                        Console.WriteLine(string.Format("Push message to {0} successful!",
+                            clientIpEndPoint));
+                    }
+                    else
+                    {
+                        Console.WriteLine(string.Format("Push message to {0} fail!",
+                            clientIpEndPoint));
+                    }
+                }
+            }
+
+            //System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
         }
     }
 }

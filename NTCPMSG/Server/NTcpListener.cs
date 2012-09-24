@@ -316,14 +316,21 @@ namespace NTCPMSG.Server
         /// <param name="data"></param>
         /// <exception cref="TcpException"></exception>
         /// <exception cref="socketException"></exception>
-        private void InnerASend(IPEndPoint ipEndPoint, MessageFlag flag, UInt32 evt, UInt16 group, byte[] data)
+        private bool InnerASend(IPEndPoint ipEndPoint, MessageFlag flag, UInt32 evt, UInt16 group, byte[] data)
         {
+            SCB scb = GetSCB(ipEndPoint);
+
+            if (scb == null)
+            {
+                return false;
+            }
+
             IncCurChannel();
 
-            SCB scb = GetSCB(ipEndPoint);
             //scb.ASend(flag, evt, group, channel, data);
             scb.ASendFromServer(flag, evt, group, CurChannel, data);
 
+            return true;
             //SCB scb = _SCB;
             //scb.ASend(flag, evt, group, channel, data);
         }
@@ -606,9 +613,9 @@ namespace NTCPMSG.Server
         /// <param name="ipEndPoint">ip end point of client</param>
         /// <param name="evt">event</param>
         /// <param name="data">data need to send</param>
-        public void ASend(IPEndPoint ipEndPoint, UInt32 evt, byte[] data)
+        public bool ASend(IPEndPoint ipEndPoint, UInt32 evt, byte[] data)
         {
-            ASend(ipEndPoint, evt, 0, data);
+            return ASend(ipEndPoint, evt, 0, data);
         }
 
 
@@ -620,9 +627,10 @@ namespace NTCPMSG.Server
         /// <param name="group">group No.</param>
         /// <param name="channel">channel no</param>
         /// <param name="data">data need to send</param>
-        public void ASend(IPEndPoint ipEndPoint, UInt32 evt, UInt16 group, byte[] data)
+        /// <returns>if ipendpoint doesn't connect to server, return false</returns>
+        public bool ASend(IPEndPoint ipEndPoint, UInt32 evt, UInt16 group, byte[] data)
         {
-            InnerASend(ipEndPoint, MessageFlag.None, evt, group, data);
+            return InnerASend(ipEndPoint, MessageFlag.None, evt, group, data);
         }
 
         /// <summary>
@@ -633,8 +641,11 @@ namespace NTCPMSG.Server
         /// <param name="group">group No.</param>
         /// <param name="data">data need to send</param>
         /// <returns>data return from client</returns>
-        public byte[] SSend(IPEndPoint ipEndPoint, UInt32 evt, UInt16 group, byte[] data)
+        private byte[] SSend(IPEndPoint ipEndPoint, UInt32 evt, UInt16 group, byte[] data)
         {
+            //It is not a good design for send a synchronization message from server.
+            //Easy to hang the server resource.
+            //Don't want to implement it.
             throw new NotImplementedException("I will implement this function in the future");
         }
 

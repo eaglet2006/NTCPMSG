@@ -589,7 +589,31 @@ namespace NTCPMSG.Client
             SyncBlock syncBlock;
             if ((flag & MessageFlag.Sync) != 0)
             {
-                if (TryGetSyncChannel(channel, out syncBlock))
+                if (channel > int.MaxValue)
+                {
+                    //server side ssend
+
+                    EventHandler<Event.ReceiveEventArgs> receiveEventHandler = ReceiveEventHandler;
+
+                    if (receiveEventHandler != null)
+                    {
+                        try
+                        {
+                            Event.ReceiveEventArgs args = new Event.ReceiveEventArgs(scb.Id,
+                                scb.RemoteIPEndPoint, flag, evt, group, channel, data);
+
+                            receiveEventHandler(this, args);
+
+                            InnerASend(flag, evt, group, args.ReturnData);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+
+                }
+                else if (TryGetSyncChannel(channel, out syncBlock))
                 {
                     syncBlock.RetData = data;
                     syncBlock.AutoEvent.Set();
