@@ -26,7 +26,7 @@ namespace NTCPMSG.Event
     {
         internal delegate void DeleOnInnerBatchReceive(SCB scb, List<ReceiveEventArgs> argsList);
 
-        internal delegate void DeleOnInnerReceive(SCB scb, MessageFlag flag, UInt32 evt, UInt16 group, UInt32 channel, byte[] data);
+        internal delegate void DeleOnInnerReceive(SCB scb, MessageFlag flag, UInt32 evt, UInt16 cableId, UInt32 channel, byte[] data);
 
         public delegate void DeleOnError(string func, Exception e);
 

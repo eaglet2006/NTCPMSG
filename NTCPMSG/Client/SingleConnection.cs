@@ -342,7 +342,7 @@ namespace NTCPMSG.Client
 
         void OnReadyToSend(byte[] data, int length)
         {
-            _SCB.ASend(data, 0, length);
+            _SCB.AsyncSend(data, 0, length);
         }
 
         /// <summary>
@@ -350,12 +350,12 @@ namespace NTCPMSG.Client
         /// </summary>
         /// <param name="flag"></param>
         /// <param name="evt"></param>
-        /// <param name="group"></param>
+        /// <param name="cableId"></param>
         /// <param name="channel"></param>
         /// <param name="data"></param>
         /// <exception cref="TcpException"></exception>
         /// <exception cref="socketException"></exception>
-        private void InnerASend(MessageFlag flag, UInt32 evt, UInt16 group, byte[] data)
+        private void InnerASend(MessageFlag flag, UInt32 evt, UInt16 cableId, byte[] data)
         {
             if (!Connected)
             {
@@ -364,10 +364,10 @@ namespace NTCPMSG.Client
 
             IncCurChannel();
 
-            _SendMessageQueue.ASend(flag, evt, group, CurChannel, data);
+            _SendMessageQueue.AsyncSend(flag, evt, cableId, CurChannel, data);
 
             //SCB scb = _SCB;
-            //scb.ASend(flag, evt, group, channel, data);
+            //scb.AsyncSend(flag, evt, cableId, channel, data);
         }
 
         /// <summary>
@@ -376,7 +376,7 @@ namespace NTCPMSG.Client
         /// <param name="evt">message event</param>
         /// <param name="data">An array of type Byte  that contains the data to be sent. </param>
         /// <returns>An array of type Byte  that contains the data that return from remote host</returns>
-        internal byte[] SSend(MessageFlag flag, UInt32 evt, byte[] data)
+        internal byte[] SyncSend(MessageFlag flag, UInt32 evt, byte[] data)
         {
             return InnerSSend(MessageFlag.Sync | flag, evt, 0, data, Timeout.Infinite);
         }
@@ -385,11 +385,11 @@ namespace NTCPMSG.Client
         /// Send syncronization message
         /// </summary>
         /// <param name="evt">event</param>
-        /// <param name="group">group no</param>
+        /// <param name="cableId">cableId no</param>
         /// <param name="data">data need to send</param>
         /// <param name="timeout">waitting timeout. In millisecond</param>
         /// <returns>data return from client</returns>
-        private byte[] InnerSSend(MessageFlag flag, UInt32 evt, UInt16 group, byte[] data, int timeout)
+        private byte[] InnerSSend(MessageFlag flag, UInt32 evt, UInt16 cableId, byte[] data, int timeout)
         {
             if (!Connected)
             {
@@ -399,7 +399,7 @@ namespace NTCPMSG.Client
             SyncBlock syncBlock;
             UInt32 channel = GetChannelForSync(out syncBlock);
 
-            _SendMessageQueue.ASend(flag, evt, group, channel, data);
+            _SendMessageQueue.AsyncSend(flag, evt, cableId, channel, data);
 
             bool bSuccess;
             byte[] retData;
@@ -438,7 +438,7 @@ namespace NTCPMSG.Client
             }
             else
             {
-                throw new TimeoutException("SSend timeout!");
+                throw new TimeoutException("SyncSend timeout!");
             }
         }
 
@@ -583,7 +583,7 @@ namespace NTCPMSG.Client
         /// </summary>
         public event EventHandler<Event.ReceiveEventArgs> ReceiveEventHandler;
 
-        private void OnReceiveEvent(SCB scb, MessageFlag flag, UInt32 evt, UInt16 group, 
+        private void OnReceiveEvent(SCB scb, MessageFlag flag, UInt32 evt, UInt16 cableId, 
             UInt32 channel, byte[] data)
         {
             SyncBlock syncBlock;
@@ -600,11 +600,11 @@ namespace NTCPMSG.Client
                         try
                         {
                             Event.ReceiveEventArgs args = new Event.ReceiveEventArgs(scb.Id,
-                                scb.RemoteIPEndPoint, flag, evt, group, channel, data);
+                                scb.RemoteIPEndPoint, flag, evt, cableId, channel, data);
 
                             receiveEventHandler(this, args);
 
-                            InnerASend(flag, evt, group, args.ReturnData);
+                            InnerASend(flag, evt, cableId, args.ReturnData);
                         }
                         catch
                         {
@@ -628,7 +628,7 @@ namespace NTCPMSG.Client
                     try
                     {
                         receiveEventHandler(this, new Event.ReceiveEventArgs(scb.Id,
-                            scb.RemoteIPEndPoint, flag, evt, group, channel, data));
+                            scb.RemoteIPEndPoint, flag, evt, cableId, channel, data));
                     }
                     catch
                     {
@@ -811,21 +811,21 @@ namespace NTCPMSG.Client
         /// </summary>
         /// <param name="evt">event</param>
         /// <param name="data">data need to send</param>
-        public void ASend(UInt32 evt, byte[] data)
+        public void AsyncSend(UInt32 evt, byte[] data)
         {
-            ASend(evt, 0, data);
+            AsyncSend(evt, 0, data);
         }
 
         /// <summary>
         /// Send asyncronization message
         /// </summary>
         /// <param name="ipEndPoint">ip end point of client</param>        /// <param name="evt">event</param>
-        /// <param name="group">group No.</param>
+        /// <param name="cableId">cableId No.</param>
         /// <param name="channel">channel no</param>
         /// <param name="data">data need to send</param>
-        public void ASend(UInt32 evt, UInt16 group, byte[] data)
+        internal void AsyncSend(UInt32 evt, UInt16 cableId, byte[] data)
         {
-            InnerASend(MessageFlag.None, evt, group, data);
+            InnerASend(MessageFlag.None, evt, cableId, data);
         }
 
         /// <summary>
@@ -834,7 +834,7 @@ namespace NTCPMSG.Client
         /// <param name="evt">message event</param>
         /// <param name="data">An array of type Byte  that contains the data to be sent. </param>
         /// <returns>An array of type Byte  that contains the data that return from remote host</returns>
-        public byte[] SSend(UInt32 evt, byte[] data)
+        public byte[] SyncSend(UInt32 evt, byte[] data)
         {
             return InnerSSend(MessageFlag.Sync, evt, 0, data, Timeout.Infinite);
         }
@@ -846,7 +846,7 @@ namespace NTCPMSG.Client
         /// <param name="data">An array of type Byte  that contains the data to be sent. </param>
         /// <param name="millisecondsTimeout">The number of milliseconds to wait, or Timeout.Infinite (-1) to wait indefinitely. </param>
         /// <returns>An array of type Byte  that contains the data that return from remote host</returns>
-        public byte[] SSend(UInt32 evt, byte[] data, int millisecondsTimeout)
+        public byte[] SyncSend(UInt32 evt, byte[] data, int millisecondsTimeout)
         {
             return InnerSSend(MessageFlag.Sync, evt, 0, data, millisecondsTimeout);
         }
@@ -856,13 +856,13 @@ namespace NTCPMSG.Client
         /// Synchronously sends data to the remote host specified in the RemoteIPEndPoint
         /// </summary>
         /// <param name="evt">message event</param>
-        /// <param name="group">group No.</param>
+        /// <param name="cableId">cableId No.</param>
         /// <param name="data">An array of type Byte  that contains the data to be sent. </param>
         /// <param name="millisecondsTimeout">The number of milliseconds to wait, or Timeout.Infinite (-1) to wait indefinitely. </param>
         /// <returns>An array of type Byte  that contains the data that return from remote host</returns>
-        public byte[] SSend(UInt32 evt, UInt16 group, byte[] data, int millisecondsTimeout)
+        internal byte[] SyncSend(UInt32 evt, UInt16 cableId, byte[] data, int millisecondsTimeout)
         {
-            return InnerSSend(MessageFlag.Sync, evt, group, data, millisecondsTimeout);
+            return InnerSSend(MessageFlag.Sync, evt, cableId, data, millisecondsTimeout);
         }
 
      

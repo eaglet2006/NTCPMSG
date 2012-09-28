@@ -311,12 +311,12 @@ namespace NTCPMSG.Server
         /// </summary>
         /// <param name="flag"></param>
         /// <param name="evt"></param>
-        /// <param name="group"></param>
+        /// <param name="cableId"></param>
         /// <param name="channel"></param>
         /// <param name="data"></param>
         /// <exception cref="TcpException"></exception>
         /// <exception cref="socketException"></exception>
-        private bool InnerASend(IPEndPoint ipEndPoint, MessageFlag flag, UInt32 evt, UInt16 group, byte[] data)
+        private bool InnerASend(IPEndPoint ipEndPoint, MessageFlag flag, UInt32 evt, UInt16 cableId, byte[] data)
         {
             SCB scb = GetSCB(ipEndPoint);
 
@@ -327,12 +327,12 @@ namespace NTCPMSG.Server
 
             IncCurChannel();
 
-            //scb.ASend(flag, evt, group, channel, data);
-            scb.ASendFromServer(flag, evt, group, CurChannel, data);
+            //scb.AsyncSend(flag, evt, cableId, channel, data);
+            scb.ASendFromServer(flag, evt, cableId, CurChannel, data);
 
             return true;
             //SCB scb = _SCB;
-            //scb.ASend(flag, evt, group, channel, data);
+            //scb.AsyncSend(flag, evt, cableId, channel, data);
         }
 
         /// <summary>
@@ -341,16 +341,16 @@ namespace NTCPMSG.Server
         /// <param name="ipEndPoint"></param>
         /// <param name="flag"></param>
         /// <param name="evt"></param>
-        /// <param name="group"></param>
+        /// <param name="cableId"></param>
         /// <param name="channel"></param>
         /// <param name="data"></param>
         /// <exception cref="TcpException"></exception>
         /// <exception cref="socketException"></exception>
-        private void InnerASendResponse(IPEndPoint ipEndPoint, MessageFlag flag, UInt32 evt, UInt16 group, UInt32 channel, byte[] data)
+        private void InnerASendResponse(IPEndPoint ipEndPoint, MessageFlag flag, UInt32 evt, UInt16 cableId, UInt32 channel, byte[] data)
         {
             SCB scb = GetSCB(ipEndPoint);
-            //scb.ASend(flag, evt, group, channel, data);
-            scb.ASendFromServer(flag, evt, group, channel, data);
+            //scb.AsyncSend(flag, evt, cableId, channel, data);
+            scb.ASendFromServer(flag, evt, cableId, channel, data);
         }
 
         #endregion
@@ -482,7 +482,7 @@ namespace NTCPMSG.Server
                     }
 
                     InnerASendResponse((IPEndPoint)message.RemoteIPEndPoint, MessageFlag.Sync,
-                        message.Event, message.Group, message.Channel, message.ReturnData);
+                        message.Event, message.CableId, message.Channel, message.ReturnData);
                 }
             }
             else if (receiveEventHandler != null)
@@ -498,7 +498,7 @@ namespace NTCPMSG.Server
                     }
 
                     InnerASendResponse((IPEndPoint)message.RemoteIPEndPoint, MessageFlag.Sync,
-                        message.Event, message.Group, message.Channel, message.ReturnData);
+                        message.Event, message.CableId, message.Channel, message.ReturnData);
                 }
             }
         }
@@ -518,7 +518,7 @@ namespace NTCPMSG.Server
             }
         }
 
-        private void OnReceiveEvent(SCB scb, MessageFlag flag, UInt32 evt, UInt16 group, 
+        private void OnReceiveEvent(SCB scb, MessageFlag flag, UInt32 evt, UInt16 cableId, 
             UInt32 channel, byte[] data)
         {
             EventHandler<Event.ReceiveEventArgs> receiveEventHandler = DataReceived;
@@ -526,7 +526,7 @@ namespace NTCPMSG.Server
             if (receiveEventHandler != null)
             {
                 Event.ReceiveEventArgs args = new Event.ReceiveEventArgs(scb.Id, 
-                    scb.RemoteIPEndPoint, flag, evt, group, channel, data);
+                    scb.RemoteIPEndPoint, flag, evt, cableId, channel, data);
 
                 _WorkThreads[scb.Id % _WorkThreads.Length].ASendMessage(args);
             }
@@ -613,9 +613,9 @@ namespace NTCPMSG.Server
         /// <param name="ipEndPoint">ip end point of client</param>
         /// <param name="evt">event</param>
         /// <param name="data">data need to send</param>
-        public bool ASend(IPEndPoint ipEndPoint, UInt32 evt, byte[] data)
+        public bool AsyncSend(IPEndPoint ipEndPoint, UInt32 evt, byte[] data)
         {
-            return ASend(ipEndPoint, evt, 0, data);
+            return AsyncSend(ipEndPoint, evt, 0, data);
         }
 
 
@@ -624,13 +624,13 @@ namespace NTCPMSG.Server
         /// </summary>
         /// <param name="ipEndPoint">ip end point of client</param>
         /// <param name="evt">event</param>
-        /// <param name="group">group No.</param>
+        /// <param name="cableId">cableId No.</param>
         /// <param name="channel">channel no</param>
         /// <param name="data">data need to send</param>
         /// <returns>if ipendpoint doesn't connect to server, return false</returns>
-        public bool ASend(IPEndPoint ipEndPoint, UInt32 evt, UInt16 group, byte[] data)
+        public bool AsyncSend(IPEndPoint ipEndPoint, UInt32 evt, UInt16 cableId, byte[] data)
         {
-            return InnerASend(ipEndPoint, MessageFlag.None, evt, group, data);
+            return InnerASend(ipEndPoint, MessageFlag.None, evt, cableId, data);
         }
 
         /// <summary>
@@ -638,10 +638,10 @@ namespace NTCPMSG.Server
         /// </summary>
         /// <param name="ipEndPoint">ip end point of client</param>
         /// <param name="evt">event</param>
-        /// <param name="group">group No.</param>
+        /// <param name="cableId">cableId No.</param>
         /// <param name="data">data need to send</param>
         /// <returns>data return from client</returns>
-        private byte[] SSend(IPEndPoint ipEndPoint, UInt32 evt, UInt16 group, byte[] data)
+        private byte[] SyncSend(IPEndPoint ipEndPoint, UInt32 evt, UInt16 cableId, byte[] data)
         {
             //It is not a good design for send a synchronization message from server.
             //Easy to hang the server resource.

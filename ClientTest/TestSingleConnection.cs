@@ -45,7 +45,7 @@ namespace ClientTest
             {
                 for (int i = 0; i < count; i++)
                 {
-                    client.SSend(11, buf, 60000);
+                    client.SyncSend(11, buf, 60000);
                 }
 
                 sw.Stop();
@@ -79,7 +79,7 @@ namespace ClientTest
                 {
                     for (int i = 0; i < count; i++)
                     {
-                        client.ASend(10, buf);
+                        client.AsyncSend(10, buf);
                     }
 
                     sw.Stop();

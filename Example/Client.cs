@@ -62,21 +62,21 @@ namespace Example
 
                 client.Connect();
 
-                Console.WriteLine("ASend: Hello world! I am Single");
+                Console.WriteLine("AsyncSend: Hello world! I am Single");
 
                 //Send an asynchronously message to server
-                client.ASend((UInt32)Event.OneWay, Encoding.UTF8.GetBytes("Hello world! I am Single"));
+                client.AsyncSend((UInt32)Event.OneWay, Encoding.UTF8.GetBytes("Hello world! I am Single"));
 
                 int number = 0;
 
                 try
                 {
-                    Console.WriteLine("SSend {0}", number);
+                    Console.WriteLine("SyncSend {0}", number);
 
                     //send a synchronously message to server
                     //send a number with event: Event.Return to server and get the response from server 
                     //with the number increased.
-                    byte[] retData = client.SSend((UInt32)Event.Return, BitConverter.GetBytes(number));
+                    byte[] retData = client.SyncSend((UInt32)Event.Return, BitConverter.GetBytes(number));
 
                     number = BitConverter.ToInt32(retData, 0);
 
@@ -105,19 +105,19 @@ namespace Example
                 clientCable.ReceiveEventHandler += new EventHandler<ReceiveEventArgs>(ReceiveEventHandler);
                 clientCable.Connect();
 
-                Console.WriteLine("ASend: Hello world! I am Cable");
+                Console.WriteLine("AsyncSend: Hello world! I am Cable");
                 //Send a one way message to server
-                clientCable.ASend((UInt32)Event.OneWay, Encoding.UTF8.GetBytes("Hello world! I am Cable"));
+                clientCable.AsyncSend((UInt32)Event.OneWay, Encoding.UTF8.GetBytes("Hello world! I am Cable"));
 
                 while (true)
                 {
-                    Console.WriteLine("SSend {0}", number);
+                    Console.WriteLine("SyncSend {0}", number);
 
                     try
                     {
                         //send a number with event: Event.Return to server and get the response from server 
                         //with the number increased.
-                        byte[] retData = clientCable.SSend((UInt32)Event.Return, BitConverter.GetBytes(number));
+                        byte[] retData = clientCable.SyncSend((UInt32)Event.Return, BitConverter.GetBytes(number));
 
                         number = BitConverter.ToInt32(retData, 0);
 
@@ -129,7 +129,7 @@ namespace Example
                         Console.WriteLine(e);
                     }
 
-                    Console.WriteLine("Quit when you press ESC. Else continue SSend.");
+                    Console.WriteLine("Quit when you press ESC. Else continue SyncSend.");
 
                     //Quit when you press ESC
                     if (Console.ReadKey().KeyChar == 0x1B)

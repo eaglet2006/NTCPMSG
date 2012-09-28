@@ -30,7 +30,7 @@ namespace NTCPMSG.Event
 
         internal MessageFlag Flag { get; private set; }
 
-        public UInt16 Group { get; private set; }
+        public UInt16 CableId { get; private set; }
 
         public UInt32 Channel { get; private set; }
 
@@ -41,13 +41,13 @@ namespace NTCPMSG.Event
         public byte[] ReturnData { get; set; }
 
 
-        public ReceiveEventArgs(int scbId, EndPoint remoteIPEndPoint, MessageFlag flag, UInt32 evt, UInt16 group, UInt32 channel, byte[] data)
+        public ReceiveEventArgs(int scbId, EndPoint remoteIPEndPoint, MessageFlag flag, UInt32 evt, UInt16 cableId, UInt32 channel, byte[] data)
         {
             SCBID = scbId;
             RemoteIPEndPoint = remoteIPEndPoint;
             Flag = flag;
             Event = evt;
-            Group = group;
+            CableId = cableId;
             Channel = channel;
             Data = data;
             ReturnData = null;

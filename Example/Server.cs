@@ -101,7 +101,7 @@ namespace Example
                 //Push message to client example.
                 foreach (IPEndPoint clientIpEndPoint in listener.GetRemoteEndPoints())
                 {
-                    bool successful = listener.ASend(clientIpEndPoint, (uint)Event.PushMessage,
+                    bool successful = listener.AsyncSend(clientIpEndPoint, (uint)Event.PushMessage,
                         Encoding.UTF8.GetBytes("I am from server!"));
 
                     if (successful)

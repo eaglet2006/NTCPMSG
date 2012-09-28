@@ -33,16 +33,16 @@ namespace NTCPMSG
         public const byte Sync1 = 0xA5;
         public MessageFlag Flag;
         public UInt32 Event;
-        public UInt16 Group;
+        public UInt16 CableId;
         public UInt32 Channel;
         public byte[] Data;
 
-        public Message(MessageFlag flag, UInt32 evt, UInt16 group, 
+        public Message(MessageFlag flag, UInt32 evt, UInt16 cableId, 
             UInt32 channel, byte[] data)
         {
             this.Flag = flag;
             this.Event = evt;
-            this.Group = group;
+            this.CableId = cableId;
             this.Channel = channel;
             this.Data = data;
         }
@@ -83,9 +83,9 @@ namespace NTCPMSG
             buffer[offset++] = (byte)((Event % 65536) / 256);
             buffer[offset++] = (byte)(Event % 256);
 
-            //Group
-            buffer[offset++] = (byte)(Group / 256);
-            buffer[offset++] = (byte)(Group % 256);
+            //CableId
+            buffer[offset++] = (byte)(CableId / 256);
+            buffer[offset++] = (byte)(CableId % 256);
 
             //Channel
             buffer[offset++] = (byte)(Channel / ThreeBytes);
@@ -122,9 +122,9 @@ namespace NTCPMSG
             stream.WriteByte((byte)((Event % 65536) / 256));
             stream.WriteByte((byte)(Event % 256));
 
-            //Group
-            stream.WriteByte((byte)(Group / 256));
-            stream.WriteByte((byte)(Group % 256));
+            //CableId
+            stream.WriteByte((byte)(CableId / 256));
+            stream.WriteByte((byte)(CableId % 256));
 
             //Channel
             stream.WriteByte((byte)(Channel / ThreeBytes));

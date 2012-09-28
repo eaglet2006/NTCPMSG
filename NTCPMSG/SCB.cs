@@ -27,7 +27,7 @@ namespace NTCPMSG
     /// Socket control block.
     /// </summary>
     /// <remarks>
-    /// Message Head: Sync Flag Event     Group Channel  Length
+    /// Message Head: Sync Flag Event     CableId Channel  Length
     ///               A5A5 00   00000000  0000  00000000 000000
     /// Max message data length is 16MB
     /// </remarks>
@@ -446,7 +446,7 @@ namespace NTCPMSG
 
         }
 
-        internal void ASendFromServer(MessageFlag flag, UInt32 evt, UInt16 group, UInt32 channel, byte[] data)
+        internal void ASendFromServer(MessageFlag flag, UInt32 evt, UInt16 cableId, UInt32 channel, byte[] data)
         {
             while (BufferLength > 10 * 1024 * 1024)
             {
@@ -464,7 +464,7 @@ namespace NTCPMSG
                 lock (_QueueLockObj)
                 {
                     IncBufferLength(data.Length);
-                    _Queue.Enqueue(new Message(flag, evt, group, channel, data));
+                    _Queue.Enqueue(new Message(flag, evt, cableId, channel, data));
                 }
             }
 
@@ -508,7 +508,7 @@ namespace NTCPMSG
                         {
                             try
                             {
-                                ASend(_MStream.GetBuffer(), 0, (int)_MStream.Length);
+                                AsyncSend(_MStream.GetBuffer(), 0, (int)_MStream.Length);
                             }
                             catch (Exception e)
                             {
@@ -549,7 +549,7 @@ namespace NTCPMSG
                     {
                         try
                         {
-                            ASend(_MStream.GetBuffer(), 0, (int)_MStream.Length);
+                            AsyncSend(_MStream.GetBuffer(), 0, (int)_MStream.Length);
                         }
                         catch (Exception e)
                         {
@@ -596,7 +596,7 @@ namespace NTCPMSG
         }
 
 
-        internal void ASend(byte[] buf, int offset, int size)
+        internal void AsyncSend(byte[] buf, int offset, int size)
         {
             //while (BufferLength > 1024 * 1024)
             //{
@@ -611,7 +611,7 @@ namespace NTCPMSG
 
         }
 
-        internal void ASend(byte[] buf)
+        internal void AsyncSend(byte[] buf)
         {
             //while (BufferLength > 1024 * 1024)
             //{
@@ -630,7 +630,7 @@ namespace NTCPMSG
         /// <param name="flag">flag</param>
         /// <param name="evt">event</param>
         /// <param name="data">data</param>
-        internal void ASend(MessageFlag flag, UInt32 evt, UInt16 group, UInt32 channel, byte[] data)
+        internal void AsyncSend(MessageFlag flag, UInt32 evt, UInt16 cableId, UInt32 channel, byte[] data)
         {
             lock (_SendLockObj)
             {
@@ -645,9 +645,9 @@ namespace NTCPMSG
                 _MSGHead[offset++] = (byte)((evt % 65536) / 256);
                 _MSGHead[offset++] = (byte)(evt % 256);
 
-                //Group
-                _MSGHead[offset++] = (byte)(group / 256);
-                _MSGHead[offset++] = (byte)(group % 256);
+                //CableId
+                _MSGHead[offset++] = (byte)(cableId / 256);
+                _MSGHead[offset++] = (byte)(cableId % 256);
 
                 //Channel
                 _MSGHead[offset++] = (byte)(channel / ThreeBytes);
@@ -666,12 +666,12 @@ namespace NTCPMSG
 
                 Array.Copy(data, 0, buf, _MSGHead.Length, data.Length);
 
-                ASend(buf);
+                AsyncSend(buf);
             }
 
-            //ASend(_MSGHead, 0, _MSGHead.Length);
+            //AsyncSend(_MSGHead, 0, _MSGHead.Length);
 
-            //ASend(data);
+            //AsyncSend(data);
         }
 
 

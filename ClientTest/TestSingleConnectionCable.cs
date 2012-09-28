@@ -45,7 +45,7 @@ namespace ClientTest
             {
                 for (int i = 0; i < count; i++)
                 {
-                    client.SSend(11, buf, 60000);
+                    client.SyncSend(11, buf, 60000);
                 }
             }
             catch (Exception e)
@@ -59,7 +59,7 @@ namespace ClientTest
 
         static void TestASyncMessage(int count)
         {
-            SingleConnectionCable client = new SingleConnectionCable(new IPEndPoint(IPAddress.Parse(_IPAddress), 2500));
+            SingleConnectionCable client = new SingleConnectionCable(new IPEndPoint(IPAddress.Parse(_IPAddress), 2500), 7);
             client.ReceiveEventHandler += new EventHandler<ReceiveEventArgs>(ReceiveEventHandler);
             client.ErrorEventHandler += new EventHandler<ErrorEventArgs>(ErrorEventHandler);
 
@@ -76,7 +76,7 @@ namespace ClientTest
                 {
                     for (int i = 0; i < count; i++)
                     {
-                        client.ASend(10, buf);
+                        client.AsyncSend(10, buf);
                     }
                 }
                 catch (Exception e)
