@@ -105,9 +105,9 @@ namespace Example
                 clientCable.ReceiveEventHandler += new EventHandler<ReceiveEventArgs>(ReceiveEventHandler);
                 clientCable.Connect();
 
-                Console.WriteLine("AsyncSend: Hello world! I am Cable");
+                Console.WriteLine("AsyncSend: Hello world! I am Cable {0}", clientCable.CableId);
                 //Send a one way message to server
-                clientCable.AsyncSend((UInt32)Event.OneWay, Encoding.UTF8.GetBytes("Hello world! I am Cable"));
+                clientCable.AsyncSend((UInt32)Event.OneWay, Encoding.UTF8.GetBytes(string.Format("Hello world! I am Cable {0}", clientCable.CableId)));
 
                 while (true)
                 {

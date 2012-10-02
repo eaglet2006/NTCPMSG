@@ -43,8 +43,8 @@ namespace NTCPMSG
             Event2,
             Event3,
 
-            Group0,
-            Group1,
+            CableId0,
+            CableId1,
             Channel0,
             Channel1,
             Channel2,
@@ -66,6 +66,7 @@ namespace NTCPMSG
         #region Fields
 
         internal int Id { get; private set; }
+        internal UInt16 _CableId = 0;
         private object _SendLockObj = new object();
         private byte[] _Buffer = new byte[4 * 1024];
         private byte[] _MSGHead = new byte[16];
@@ -73,7 +74,7 @@ namespace NTCPMSG
         private MessageFlag _CurFlag;
         private UInt32 _CurEvent;
         private int _CurLength;
-        private UInt16 _CurGroup;
+        private UInt16 _CurCableId;
         private UInt32 _CurChannel;
         private byte[] _CurData;
         private int _CurDataOffset;
@@ -120,6 +121,25 @@ namespace NTCPMSG
         internal Socket WorkSocket {get; set;}
 
         internal IPEndPoint RemoteIPEndPoint { get; private set; }
+
+        internal UInt16 CableId
+        {
+            get
+            {
+                lock (_SCBID_LOCK)
+                {
+                    return _CableId;
+                }
+            }
+
+            set
+            {
+                lock (_SCBID_LOCK)
+                {
+                    _CableId = value;
+                }
+            }
+        }
 
         internal bool SocketConnected
         {
@@ -184,7 +204,7 @@ namespace NTCPMSG
                 case State.Flag:
                     _CurFlag = (MessageFlag)b;
                     _CurEvent = 0;
-                    _CurGroup = 0;
+                    _CurCableId = 0;
                     _CurChannel = 0;
                     return State.Event0;
                 case State.Event0:
@@ -201,12 +221,12 @@ namespace NTCPMSG
                 case State.Event3:
                     _CurEvent += b;
                     _CurLength = 0;
-                    return State.Group0;
-                case State.Group0:
-                    _CurGroup = (UInt16)(b * 256);
-                    return State.Group1;
-                case State.Group1:
-                    _CurGroup += b;
+                    return State.CableId0;
+                case State.CableId0:
+                    _CurCableId = (UInt16)(b * 256);
+                    return State.CableId1;
+                case State.CableId1:
+                    _CurCableId += b;
                     return State.Channel0;
                 case State.Channel0:
                     _CurChannel = (UInt32)(b * ThreeBytes);
@@ -310,14 +330,14 @@ namespace NTCPMSG
                         if (OnBatchReceive != null)
                         {
                             recvArgsList.Add(new NTCPMSG.Event.ReceiveEventArgs(
-                                this.Id, this.RemoteIPEndPoint, _CurFlag, _CurEvent, _CurGroup, _CurChannel, _CurData));
+                                this.Id, this.RemoteIPEndPoint, _CurFlag, _CurEvent, _CurCableId, _CurChannel, _CurData));
                         }
 
                         if (OnReceive != null)
                         {
                             try
                             {
-                                OnReceive(this, _CurFlag, _CurEvent, _CurGroup, _CurChannel, _CurData);
+                                OnReceive(this, _CurFlag, _CurEvent, _CurCableId, _CurChannel, _CurData);
                             }
                             catch (Exception e)
                             {
@@ -344,14 +364,14 @@ namespace NTCPMSG
                     if (OnBatchReceive != null)
                     {
                         recvArgsList.Add(new NTCPMSG.Event.ReceiveEventArgs(
-                            this.Id, this.RemoteIPEndPoint, _CurFlag, _CurEvent, _CurGroup, _CurChannel, _CurData));
+                            this.Id, this.RemoteIPEndPoint, _CurFlag, _CurEvent, _CurCableId, _CurChannel, _CurData));
                     }
 
                     if (OnReceive != null)
                     {
                         try
                         {
-                            OnReceive(this, _CurFlag, _CurEvent, _CurGroup, _CurChannel, new byte[0]);
+                            OnReceive(this, _CurFlag, _CurEvent, _CurCableId, _CurChannel, new byte[0]);
                         }
                         catch (Exception e)
                         {

@@ -8,7 +8,7 @@ namespace NTCPMSG.Server
     /// <summary>
     /// Alloc processor id for specified client.
     /// </summary>
-    class AllocClientProcessor
+    class ClientProcessorAllocator
     {
         class ClientProcessorUsage
         {

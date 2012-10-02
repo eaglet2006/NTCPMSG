@@ -115,6 +115,23 @@ namespace Example
                             clientIpEndPoint));
                     }
                 }
+
+                foreach (UInt16 cableId in listener.GetCableIds())
+                {
+                    bool successful = listener.AsyncSend(cableId, (uint)Event.PushMessage,
+                        Encoding.UTF8.GetBytes(string.Format("Hi cable {0}!", cableId)));
+
+                    if (successful)
+                    {
+                        Console.WriteLine(string.Format("Push message to cable {0} successful!",
+                            cableId));
+                    }
+                    else
+                    {
+                        Console.WriteLine(string.Format("Push message to cable {0} fail!",
+                            cableId));
+                    }
+                }
             }
 
             //System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);

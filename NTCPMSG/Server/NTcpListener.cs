@@ -176,7 +176,8 @@ namespace NTCPMSG.Server
         object _ChannelSync = new object();
         UInt32 _CurChannel = int.MaxValue;
 
-        AllocClientProcessor _AllocClientProcessor = new AllocClientProcessor();
+        ClientProcessorAllocator _AllocClientProcessor = new ClientProcessorAllocator();
+        CableIdAllocator _CableIdAllocator = new CableIdAllocator();
         #endregion
 
         #region Properties
@@ -238,12 +239,30 @@ namespace NTCPMSG.Server
                 {
                     case InnerEvent.GetProcessorId:
                         {
+                            //Get processorid and cableid
+                            //Only syncronize connection of single connection cable will
+                            //Send this event to server to alloc
+                            
+                            //Processor mask from client
                             ulong mask = LittleEndianBitConverter.ToUInt64(message.Data, 0);
 
+                            //Get Processor id
                             int pId = _AllocClientProcessor.GetProcessorId(((IPEndPoint)message.RemoteIPEndPoint).Address,
                                 mask, message.SCBID);
 
-                            message.ReturnData = LittleEndianBitConverter.GetBytes(pId);
+                            //Get cable id
+                            SCB scb = GetSCB((IPEndPoint)message.RemoteIPEndPoint);
+                            UInt16 cableId = _CableIdAllocator.Alloc(scb.RemoteIPEndPoint);
+                            scb.CableId = cableId;
+
+                            message.ReturnData = new byte[sizeof(int) + sizeof(UInt16)];
+
+                            Array.Copy(LittleEndianBitConverter.GetBytes(pId), 0,
+                                message.ReturnData, 0, sizeof(int));
+
+                            Array.Copy(LittleEndianBitConverter.GetBytes(cableId), 0,
+                                message.ReturnData, sizeof(int), sizeof(UInt16));
+
                         }
                         break;
 
@@ -446,6 +465,7 @@ namespace NTCPMSG.Server
         private void OnDisconnectEvent(SCB scb)
         {
             RemoteClientPID(scb.RemoteIPEndPoint.Address, scb.Id);
+            _CableIdAllocator.Return(scb.CableId);
 
             RemoteSCB(scb);
 
@@ -538,6 +558,16 @@ namespace NTCPMSG.Server
         #region public methods
 
         /// <summary>
+        /// Get all of the cable ids that are connecting to me.
+        /// </summary>
+        /// <returns></returns>
+        public UInt16[] GetCableIds()
+        {
+            return _CableIdAllocator.CableIds;
+        }
+
+
+        /// <summary>
         /// Get all remote end points that are connecting to this listener currently.
         /// </summary>
         /// <returns></returns>
@@ -618,6 +648,26 @@ namespace NTCPMSG.Server
             return AsyncSend(ipEndPoint, evt, 0, data);
         }
 
+        /// <summary>
+        /// Send asynchronous message to client that specified by cableid.
+        /// </summary>
+        /// <param name="cableId">calbeid</param>
+        /// <param name="evt">event </param>
+        /// <param name="data">data</param>
+        /// <returns></returns>
+        public bool AsyncSend(UInt16 cableId, UInt32 evt, byte[] data)
+        {
+            IPEndPoint ipEndPoint = _CableIdAllocator.Get(cableId);
+
+            if (ipEndPoint == null)
+            {
+                return false;
+            }
+            else
+            {
+                return AsyncSend(ipEndPoint, evt, cableId, data);
+            }
+        }
 
         /// <summary>
         /// Send asyncronization message

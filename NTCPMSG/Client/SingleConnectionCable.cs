@@ -46,6 +46,7 @@ namespace NTCPMSG.Client
         bool _AutoConnect;
         bool _TryToConnect = false;
         bool _Closing = false;
+        UInt16 _CableId = 0;
 
         System.Threading.Thread _ConnectThread = null;
 
@@ -90,6 +91,29 @@ namespace NTCPMSG.Client
         #endregion
 
         #region public properties 
+
+        /// <summary>
+        /// Get cable id
+        /// </summary>
+        public UInt16 CableId
+        {
+            get
+            {
+                lock (_LockObj)
+                {
+                    return _CableId;
+                }
+            }
+
+            private set
+            {
+                lock (_LockObj)
+                {
+                    _CableId = value;
+                }
+            }
+        }
+
 
         /// <summary>
         /// Get the capacity of the single connections inside this cable. 
@@ -363,6 +387,9 @@ namespace NTCPMSG.Client
                 {
                     if (!_SyncConnection.Connected)
                     {
+                        TryToConnect = true;
+
+                        CableId = 0;
                         _SyncConnection.Connect(millisecondsTimeout, true);
 
                         ulong processAffinity = (ulong)System.Diagnostics.Process.GetCurrentProcess().ProcessorAffinity;
@@ -371,7 +398,7 @@ namespace NTCPMSG.Client
                             LittleEndianBitConverter.GetBytes(processAffinity));
 
                         int processorId = LittleEndianBitConverter.ToInt32(ret, 0);
-
+                        CableId = LittleEndianBitConverter.ToUInt16(ret, sizeof(int));
                         _SyncConnection.SetProcessorId(processorId);
                     }
                 }
@@ -403,6 +430,8 @@ namespace NTCPMSG.Client
 
                     try
                     {
+                        TryToConnect = true;
+
                         pendingConn.Connect(millisecondsTimeout);
 
                         lock (_LockObj)
@@ -436,7 +465,7 @@ namespace NTCPMSG.Client
         /// <param name="data"></param>
         /// <exception cref="TcpException"></exception>
         /// <exception cref="socketException"></exception>
-        private void InnerASend(UInt32 evt, UInt16 cableId, byte[] data)
+        private void InnerASend(UInt32 evt, byte[] data)
         {
             if (Closing)
             {
@@ -450,7 +479,7 @@ namespace NTCPMSG.Client
                 throw new NTcpException("Tcp disconnected", ErrorCode.Disconnected);
             }
 
-            singleConn.AsyncSend(evt, cableId, data);
+            singleConn.AsyncSend(evt, CableId, data);
         }
 
         /// <summary>
@@ -461,7 +490,7 @@ namespace NTCPMSG.Client
         /// <param name="data">data need to send</param>
         /// <param name="timeout">waitting timeout. In millisecond</param>
         /// <returns>data return from client</returns>
-        private byte[] InnerSSend(UInt32 evt, UInt16 cableId, byte[] data, int timeout)
+        private byte[] InnerSSend(UInt32 evt, byte[] data, int timeout)
         {
             if (Closing)
             {
@@ -475,7 +504,29 @@ namespace NTCPMSG.Client
                 throw new NTcpException("Tcp disconnected", ErrorCode.Disconnected);
             }
 
-            return singleConn.SyncSend(evt, cableId, data, timeout);
+            int millisecondsRemain = timeout;
+
+            while (CableId == 0)
+            {
+                System.Threading.Thread.Sleep(10);
+
+                if (!singleConn.Connected)
+                {
+                    throw new NTcpException("Tcp disconnected", ErrorCode.Disconnected);
+                }
+
+                if (timeout != System.Threading.Timeout.Infinite)
+                {
+                    millisecondsRemain -= 10;
+
+                    if (millisecondsRemain <= 0)
+                    {
+                        throw new NTcpException("Tcp is establishing.", ErrorCode.Disconnected);
+                    }
+                }
+            }
+
+            return singleConn.SyncSend(evt, CableId, data, timeout);
         }
 
         #endregion
@@ -678,7 +729,7 @@ namespace NTCPMSG.Client
         /// <param name="data">data need to send</param>
         public void AsyncSend(UInt32 evt, byte[] data)
         {
-            InnerASend(evt, 0, data);
+            InnerASend(evt, data);
         }
 
         /// <summary>
@@ -689,7 +740,7 @@ namespace NTCPMSG.Client
         /// <returns>An array of type Byte  that contains the data that return from remote host</returns>
         public byte[] SyncSend(UInt32 evt, byte[] data)
         {
-            return InnerSSend(evt, 0, data, System.Threading.Timeout.Infinite);
+            return InnerSSend(evt, data, System.Threading.Timeout.Infinite);
         }
 
         /// <summary>
@@ -701,7 +752,7 @@ namespace NTCPMSG.Client
         /// <returns>An array of type Byte  that contains the data that return from remote host</returns>
         public byte[] SyncSend(UInt32 evt, byte[] data, int millisecondsTimeout)
         {
-            return InnerSSend(evt, 0, data, millisecondsTimeout);
+            return InnerSSend(evt, data, millisecondsTimeout);
         }
 
         #endregion
