@@ -465,7 +465,11 @@ namespace NTCPMSG.Server
         private void OnDisconnectEvent(SCB scb)
         {
             RemoteClientPID(scb.RemoteIPEndPoint.Address, scb.Id);
-            _CableIdAllocator.Return(scb.CableId);
+
+            if (scb.CableId != 0)
+            {
+                _CableIdAllocator.Return(scb.CableId);
+            }
 
             RemoteSCB(scb);
 

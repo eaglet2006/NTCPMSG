@@ -53,6 +53,7 @@ namespace Example
 
                 Console.Write("Press any key to start single connection example");
                 Console.ReadKey();
+                Console.WriteLine();
 
                 //Create a SingleConnection instanace that will try to connect to host specified in 
                 //ipAddress and port (2500).
@@ -87,7 +88,7 @@ namespace Example
                     Console.WriteLine(e);
                 }
 
-                Console.Write("Waitting for 10 seconds to finish simple connection example.");
+                Console.WriteLine("Waitting for 10 seconds to finish simple connection example.");
                 System.Threading.Thread.Sleep(10000);
 
                 client.Close();
@@ -95,6 +96,7 @@ namespace Example
                 //************* SingleConnectionCable Example *****************
                 Console.Write("Press any key to start single connection cable example");
                 Console.ReadKey();
+                Console.WriteLine();
 
                 //Create a SingleConnectionCable instance that will try to connect to host specified in 
                 //ipAddress and port (2500).

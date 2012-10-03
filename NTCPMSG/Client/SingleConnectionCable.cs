@@ -479,6 +479,17 @@ namespace NTCPMSG.Client
                 throw new NTcpException("Tcp disconnected", ErrorCode.Disconnected);
             }
 
+
+            while (CableId == 0)
+            {
+                System.Threading.Thread.Sleep(1);
+
+                if (!singleConn.Connected)
+                {
+                    throw new NTcpException("Tcp disconnected", ErrorCode.Disconnected);
+                }
+            }
+
             singleConn.AsyncSend(evt, CableId, data);
         }
 

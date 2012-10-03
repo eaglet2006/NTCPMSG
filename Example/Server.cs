@@ -25,6 +25,15 @@ namespace Example
                     {
                         try
                         {
+                            if (args.CableId != 0)
+                            {
+                                Console.WriteLine("Get one way message from cable {0}", args.CableId);
+                            }
+                            else
+                            {
+                                Console.WriteLine("Get one way message from {0}", args.RemoteIPEndPoint);
+                            }
+
                             Console.WriteLine(Encoding.UTF8.GetString(args.Data));
                         }
                         catch (Exception e)
