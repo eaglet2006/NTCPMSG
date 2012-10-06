@@ -65,12 +65,6 @@
     <Compile Include="Server.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NTCPMSG\NTCPMSG.csproj">
-      <Project>{D7F3E627-5EEF-4AAE-A23D-61E75627EF34}</Project>
-      <Name>NTCPMSG</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
       <Visible>False</Visible>
       <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
@@ -89,6 +83,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NTCPMSG\NTCPMSG2010.csproj">
+      <Project>{D7F3E627-5EEF-4AAE-A23D-61E75627EF34}</Project>
+      <Name>NTCPMSG2010</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
