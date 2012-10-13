@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.21022</ProductVersion>
+    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{D7F3E627-5EEF-4AAE-A23D-61E75627EF34}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -42,6 +42,7 @@
     <Compile Include="Client\SingleConnection.cs" />
     <Compile Include="Client\SingleConnectionCable.cs" />
     <Compile Include="Event\AcceptEventArgs.cs" />
+    <Compile Include="Event\CableConnectedEventArgs.cs" />
     <Compile Include="Event\Delegates.cs" />
     <Compile Include="Event\DisconnectEventArgs.cs" />
     <Compile Include="Event\ErrorEventArgs.cs" />

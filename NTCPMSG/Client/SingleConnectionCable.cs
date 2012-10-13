@@ -400,6 +400,8 @@ namespace NTCPMSG.Client
                         int processorId = LittleEndianBitConverter.ToInt32(ret, 0);
                         CableId = LittleEndianBitConverter.ToUInt16(ret, sizeof(int));
                         _SyncConnection.SetProcessorId(processorId);
+
+                        OnConnectedEvent();
                     }
                 }
                 catch (Exception e)
@@ -543,6 +545,27 @@ namespace NTCPMSG.Client
         #endregion
 
         #region Events
+
+        /// <summary>
+        /// Event occurred when this cable connected.
+        /// </summary>
+        public event EventHandler<Event.CableConnectedEventArgs> ConnectedEventHandler;
+
+        private void OnConnectedEvent()
+        {
+            EventHandler<Event.CableConnectedEventArgs> connectedEventHandler = ConnectedEventHandler;
+
+            if (connectedEventHandler != null)
+            {
+                try
+                {
+                    connectedEventHandler(this, new CableConnectedEventArgs());
+                }
+                catch
+                {
+                }
+            }
+        }
 
         /// <summary>
         /// Event occurred when some error raised during sending message.

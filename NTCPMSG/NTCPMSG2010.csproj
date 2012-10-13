@@ -64,6 +64,7 @@
     <Compile Include="Client\SingleConnection.cs" />
     <Compile Include="Client\SingleConnectionCable.cs" />
     <Compile Include="Event\AcceptEventArgs.cs" />
+    <Compile Include="Event\CableConnectedEventArgs.cs" />
     <Compile Include="Event\Delegates.cs" />
     <Compile Include="Event\DisconnectEventArgs.cs" />
     <Compile Include="Event\ErrorEventArgs.cs" />
