@@ -479,7 +479,7 @@ namespace NTCPMSG.Server
             {
                 try
                 {
-                    disconnectEventHandler(this, new Event.DisconnectEventArgs(scb.RemoteIPEndPoint));
+                    disconnectEventHandler(this, new Event.DisconnectEventArgs(scb.RemoteIPEndPoint, scb.CableId));
                 }
                 catch
                 {

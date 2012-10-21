@@ -611,7 +611,7 @@ namespace NTCPMSG.Client
             {
                 try
                 {
-                    disconnectEventHandler(this, new Event.DisconnectEventArgs(RemoteIPEndPoint));
+                    disconnectEventHandler(this, new Event.DisconnectEventArgs(RemoteIPEndPoint, CableId));
                 }
                 catch
                 {

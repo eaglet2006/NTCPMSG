@@ -26,9 +26,12 @@ namespace NTCPMSG.Event
     {
         public EndPoint RemoteIPEndPoint { get; private set; }
 
-        public DisconnectEventArgs(EndPoint remoteIPEndPoint)
+        public UInt16 CableId { get; private set; }
+
+        public DisconnectEventArgs(EndPoint remoteIPEndPoint, UInt16 cableId)
         {
             this.RemoteIPEndPoint = remoteIPEndPoint;
+            this.CableId = cableId;
         }
 
     }
