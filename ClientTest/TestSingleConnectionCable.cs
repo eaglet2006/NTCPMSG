@@ -31,6 +31,11 @@ namespace ClientTest
             Console.WriteLine(args.ErrorException);
         }
 
+        static void DisconnectEventHandler(object sender, DisconnectEventArgs args)
+        {
+            Console.WriteLine("Disconnect from {0}", args.RemoteIPEndPoint);
+        }
+
         static void TestSyncMessage(object state)
         {
             SingleConnectionCable client = (SingleConnectionCable)state;
@@ -62,7 +67,8 @@ namespace ClientTest
             SingleConnectionCable client = new SingleConnectionCable(new IPEndPoint(IPAddress.Parse(_IPAddress), 2500), 7);
             client.ReceiveEventHandler += new EventHandler<ReceiveEventArgs>(ReceiveEventHandler);
             client.ErrorEventHandler += new EventHandler<ErrorEventArgs>(ErrorEventHandler);
-
+            client.RemoteDisconnected += new EventHandler<DisconnectEventArgs>(DisconnectEventHandler);
+            
             try
             {
                 client.Connect();
@@ -159,6 +165,8 @@ namespace ClientTest
 
                     client.ReceiveEventHandler += new EventHandler<ReceiveEventArgs>(ReceiveEventHandler);
                     client.ErrorEventHandler += new EventHandler<ErrorEventArgs>(ErrorEventHandler);
+                    client.RemoteDisconnected += new EventHandler<DisconnectEventArgs>(DisconnectEventHandler);
+                   
                     client.Connect();
 
                     for (int i = 0; i < threadNumber; i++)

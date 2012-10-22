@@ -321,7 +321,10 @@ namespace NTCPMSG.Client
 
                     if (sendCount % 100 != 0)
                     {
-                        return _CurrentWorkingConnection.Value;
+                        if (_CurrentWorkingConnection.Value.Connected)
+                        {
+                            return _CurrentWorkingConnection.Value;
+                        }
                     }
 
                     cur = _CurrentWorkingConnection.Next;
@@ -706,6 +709,8 @@ namespace NTCPMSG.Client
                      ErrorCode.AutoConnect);
             }
 
+            bool connected = this.Connected;
+
             _SyncConnection.Disconnect();
 
             lock (_LockObj)
@@ -721,7 +726,10 @@ namespace NTCPMSG.Client
                 _WorkingAsyncConnections.Clear();
                 _CurrentWorkingConnection = null;
 
-                OnDisconnectEvent();
+                if (connected)
+                {
+                    OnDisconnectEvent();
+                }
             }
         }
 
