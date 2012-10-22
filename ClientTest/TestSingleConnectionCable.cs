@@ -161,7 +161,7 @@ namespace ClientTest
 
                     Console.WriteLine("Actual test thread number = {0}", threadNumber);
 
-                    SingleConnectionCable client = new SingleConnectionCable(new IPEndPoint(IPAddress.Parse(_IPAddress), 2500));
+                    SingleConnectionCable client = new SingleConnectionCable(new IPEndPoint(IPAddress.Parse(_IPAddress), 2500), 1);
 
                     client.ReceiveEventHandler += new EventHandler<ReceiveEventArgs>(ReceiveEventHandler);
                     client.ErrorEventHandler += new EventHandler<ErrorEventArgs>(ErrorEventHandler);

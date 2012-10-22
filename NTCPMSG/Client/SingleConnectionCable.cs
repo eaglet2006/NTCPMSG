@@ -604,6 +604,11 @@ namespace NTCPMSG.Client
         private void InnerRemoteDisconnected(object sender, DisconnectEventArgs args)
         {
             GetAWorkingConnection();
+
+            if (Capacity == 1)
+            {
+                OnDisconnectEvent();
+            }
         }
 
         private void OnDisconnectEvent()
