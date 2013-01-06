@@ -82,6 +82,10 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ClientTest\ClientTest2010.csproj">
+      <Project>{C8090CA1-69FA-40E3-85BF-81B44568317E}</Project>
+      <Name>ClientTest2010</Name>
+    </ProjectReference>
     <ProjectReference Include="..\NTCPMSG\NTCPMSG2010.csproj">
       <Project>{D7F3E627-5EEF-4AAE-A23D-61E75627EF34}</Project>
       <Name>NTCPMSG2010</Name>

@@ -11,5 +11,7 @@ namespace Example
         Return = 2,
 
         PushMessage = 3,
+
+        Bin = 4,
     }
 }

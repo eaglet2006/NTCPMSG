@@ -22,6 +22,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 
+using NTCPMSG.Serialize;
+
 namespace NTCPMSG.Client
 {
     /// <summary>
@@ -187,7 +189,17 @@ namespace NTCPMSG.Client
         #endregion
 
         #region public Properties
-        
+
+        /// <summary>
+        /// Default serializer for data
+        /// </summary>
+        public Serialize.ISerialize DefaultDataSerializer { get; set; }
+
+        /// <summary>
+        /// Default serializer for return value
+        /// </summary>
+        public Serialize.ISerialize DefaultReturnSerializer { get; set; }
+
         /// <summary>
         /// Get tcp connected or not.
         /// </summary>
@@ -482,6 +494,8 @@ namespace NTCPMSG.Client
             IPAddress bindIP = IPAddress.Any;
             this.BindIPEndPoint = new IPEndPoint(bindIP, 0);
             this.RemoteIPEndPoint = remoteIPEndPoint;
+            DefaultDataSerializer = new Serialize.BinSerializer();
+            DefaultReturnSerializer = new Serialize.BinSerializer();
         }
 
         /// <summary>
@@ -493,6 +507,8 @@ namespace NTCPMSG.Client
         {
             this.BindIPEndPoint = new IPEndPoint(bindIPAddress, 0);
             this.RemoteIPEndPoint = remoteIPEndPoint;
+            DefaultDataSerializer = new Serialize.BinSerializer();
+            DefaultReturnSerializer = new Serialize.BinSerializer();
         }
 
         /// <summary>
@@ -807,6 +823,38 @@ namespace NTCPMSG.Client
         }
 
         /// <summary>
+        /// Send asyncronization message as object
+        /// </summary>
+        /// <param name="evt">event</param>
+        /// <param name="obj">object need to send</param>
+        /// <param name="serializer">serializer</param>
+        public void AsyncSend<T>(UInt32 evt, ref T obj, ISerialize<T> serializer)
+        {
+            AsyncSend(evt, 0, serializer.GetBytes(ref obj));
+        }
+
+        /// <summary>
+        /// Send asyncronization message as object
+        /// </summary>
+        /// <param name="evt">event</param>
+        /// <param name="obj">object need to send</param>
+        /// <param name="serializer">serializer</param>
+        public void AsyncSend(UInt32 evt, object obj, ISerialize serializer)
+        {
+            AsyncSend(evt, 0, serializer.GetBytes(obj));
+        }
+
+        /// <summary>
+        /// Send asyncronization message as object
+        /// </summary>
+        /// <param name="evt">event</param>
+        /// <param name="obj">object need to send</param>
+        public void AsyncSend(UInt32 evt, object obj)
+        {
+            AsyncSend(evt, obj, DefaultDataSerializer);
+        }
+
+        /// <summary>
         /// Send asyncronization message
         /// </summary>
         /// <param name="evt">event</param>
@@ -819,13 +867,107 @@ namespace NTCPMSG.Client
         /// <summary>
         /// Send asyncronization message
         /// </summary>
-        /// <param name="ipEndPoint">ip end point of client</param>        /// <param name="evt">event</param>
+        /// <param name="ipEndPoint">ip end point of client</param>        
+        /// <param name="evt">event</param>
         /// <param name="cableId">cableId No.</param>
         /// <param name="channel">channel no</param>
         /// <param name="data">data need to send</param>
         internal void AsyncSend(UInt32 evt, UInt16 cableId, byte[] data)
         {
             InnerASend(MessageFlag.None, evt, cableId, data);
+        }
+
+
+        /// <summary>
+        /// Synchronously sends data to the remote host specified in the RemoteIPEndPoint using Default serializer
+        /// </summary>
+        /// <param name="evt">message event</param>
+        /// <param name="obj">object need to be sent</param>
+        /// <param name="millisecondsTimeout">The number of milliseconds to wait, or Timeout.Infinite (-1) to wait indefinitely. </param>
+        /// <param name="dataSerializer">serializer for data</param>
+        /// <param name="returnSerializer">serilaizer for return data</param>
+        /// <returns>R data type that contains the data that return from remote host</returns>
+        public R SyncSend<T, R>(UInt32 evt, ref T obj, int millisecondsTimeout, ISerialize<T> dataSerializer, ISerialize<R> returnSerializer)
+        {
+            byte[] ret = SyncSend(evt, 0, dataSerializer.GetBytes(ref obj), millisecondsTimeout);
+
+            return returnSerializer.GetObject(ret);
+        }
+
+        /// <summary>
+        /// Synchronously sends data to the remote host specified in the RemoteIPEndPoint using Default serializer
+        /// </summary>
+        /// <param name="evt">message event</param>
+        /// <param name="obj">object need to be sent</param>
+        /// <returns>object that contains the data that return from remote host</returns>
+        public object SyncSend(UInt32 evt, object obj)
+        {
+            byte[] ret = SyncSend(evt, 0, DefaultDataSerializer.GetBytes(obj), Timeout.Infinite);
+
+            return DefaultReturnSerializer.GetObject(ret);
+        }
+
+        /// <summary>
+        /// Synchronously sends data to the remote host specified in the RemoteIPEndPoint using Default serializer
+        /// </summary>
+        /// <param name="evt">message event</param>
+        /// <param name="obj">object need to be sent</param>
+        /// <param name="millisecondsTimeout">The number of milliseconds to wait, or Timeout.Infinite (-1) to wait indefinitely. </param>
+        /// <returns>object that contains the data that return from remote host</returns>
+        public object SyncSend(UInt32 evt, object obj, int millisecondsTimeout)
+        {
+            byte[] ret = SyncSend(evt, 0, DefaultDataSerializer.GetBytes(obj), millisecondsTimeout);
+
+            return DefaultReturnSerializer.GetObject(ret);
+        }
+
+
+        /// <summary>
+        /// Synchronously sends data to the remote host specified in the RemoteIPEndPoint
+        /// </summary>
+        /// <param name="evt">message event</param>
+        /// <param name="obj">object need to be sent</param>
+        /// <param name="millisecondsTimeout">The number of milliseconds to wait, or Timeout.Infinite (-1) to wait indefinitely. </param>
+        /// <param name="serializer">serializer for data and return data</param>
+        /// <returns>object that contains the data that return from remote host</returns>
+        public object SyncSend(UInt32 evt, object obj, int millisecondsTimeout, ISerialize serializer)
+        {
+            byte[] ret = SyncSend(evt, 0, serializer.GetBytes(obj), millisecondsTimeout);
+
+            return serializer.GetObject(ret);
+        }
+
+        /// <summary>
+        /// Synchronously sends data to the remote host specified in the RemoteIPEndPoint
+        /// </summary>
+        /// <param name="evt">message event</param>
+        /// <param name="obj">object need to be sent</param>
+        /// <param name="millisecondsTimeout">The number of milliseconds to wait, or Timeout.Infinite (-1) to wait indefinitely. </param>
+        /// <param name="dataSerializer">serializer for data</param>
+        /// <param name="returnSerializer">serilaizer for return data</param>
+        /// <returns>object that contains the data that return from remote host</returns>
+        public object SyncSend(UInt32 evt, object obj, int millisecondsTimeout, ISerialize dataSerializer, ISerialize returnSerializer)
+        {
+            byte[] ret = SyncSend(evt, 0, dataSerializer.GetBytes(obj), millisecondsTimeout);
+
+            return returnSerializer.GetObject(ret);
+        }
+
+        /// <summary>
+        /// Synchronously sends data to the remote host specified in the RemoteIPEndPoint
+        /// </summary>
+        /// <param name="evt">message event</param>
+        /// <param name="cableId">cableId No.</param>
+        /// <param name="obj">object need to be sent</param>
+        /// <param name="millisecondsTimeout">The number of milliseconds to wait, or Timeout.Infinite (-1) to wait indefinitely. </param>
+        /// <param name="dataSerializer">serializer for data</param>
+        /// <param name="returnSerializer">serilaizer for return data</param>
+        /// <returns>object that contains the data that return from remote host</returns>
+        internal object SyncSend(UInt32 evt, UInt16 cableId, object obj, int millisecondsTimeout, ISerialize dataSerializer, ISerialize returnSerializer)
+        {
+            byte[] ret = SyncSend(evt, cableId, dataSerializer.GetBytes(obj), millisecondsTimeout);
+
+            return returnSerializer.GetObject(ret);
         }
 
         /// <summary>

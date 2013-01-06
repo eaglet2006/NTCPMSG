@@ -36,8 +36,8 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.2.5.1")]
-[assembly: AssemblyFileVersion("1.2.5.1")]
+[assembly: AssemblyVersion("1.3.0.0")]
+[assembly: AssemblyFileVersion("1.3.0.0")]
 
 /**********************************************************************************************
  * 1.1.9.0
@@ -55,5 +55,6 @@ using System.Runtime.InteropServices;
  * Fix a bug of SingleConnectionCable. RemoteDisconneted event isn't ocurr
  * 1.2.5.1
  * Fix a bug of RemoteDisconnected event of SingleConnectionCable when capcity == 1.
-
+ * 1.3.0.0
+ * Add send object feature
 ************************************************************************************************/

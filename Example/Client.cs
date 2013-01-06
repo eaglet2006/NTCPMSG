@@ -111,6 +111,10 @@ namespace Example
                 //Send a one way message to server
                 clientCable.AsyncSend((UInt32)Event.OneWay, Encoding.UTF8.GetBytes(string.Format("Hello world! I am Cable {0}", clientCable.CableId)));
 
+                //Send object with bin serialization (By Default)
+                Console.WriteLine("Bin serialization");
+                clientCable.AsyncSend((UInt32)Event.Bin, "Bin serialization");
+
                 while (true)
                 {
                     Console.WriteLine("SyncSend {0}", number);

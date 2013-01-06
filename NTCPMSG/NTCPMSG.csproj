@@ -52,6 +52,13 @@
     <Compile Include="Message.cs" />
     <Compile Include="MessageFlag.cs" />
     <Compile Include="ProcessorThread.cs" />
+    <Compile Include="Serialize\BinSerializer.cs" />
+    <Compile Include="Serialize\ISerialize.cs" />
+    <Compile Include="Serialize\JsonSerializer.cs" />
+    <Compile Include="Serialize\MessageParse.cs" />
+    <Compile Include="Serialize\SimpleBinSerializer.cs" />
+    <Compile Include="Serialize\StructSerializer.cs" />
+    <Compile Include="Serialize\XMLSerializer.cs" />
     <Compile Include="Server\ClientProcessorAllocator.cs" />
     <Compile Include="Server\CableIdAllocator.cs" />
     <Compile Include="Server\ReceiveMessageQueue.cs" />

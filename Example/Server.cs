@@ -5,11 +5,30 @@ using System.Net;
 
 using NTCPMSG.Server;
 using NTCPMSG.Event;
+using NTCPMSG.Serialize;
 
 namespace Example
 {
     class Server
     {
+        class BinMessageParse : MessageParse
+        {
+            public BinMessageParse()
+                : base(new BinSerializer(), new BinSerializer())
+            {
+
+            }
+
+            public override object ProcessMessage(int SCBID, EndPoint RemoteIPEndPoint, NTCPMSG.MessageFlag Flag, ushort CableId, uint Channel, uint Event, object obj)
+            {
+                Console.WriteLine(obj);
+
+                return null;
+            }
+        }
+
+        static BinMessageParse _sBinMessageParse = new BinMessageParse();
+
         /// <summary>
         /// DataReceived event will be called back when server get message from client which connect to.
         /// </summary>
@@ -57,6 +76,10 @@ namespace Example
                             Console.WriteLine(e);
                         }
                     }
+                    break;
+
+                case Event.Bin:
+                    _sBinMessageParse.ReceiveEventHandler(sender, args);
                     break;
             }
         }

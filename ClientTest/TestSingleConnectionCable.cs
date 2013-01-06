@@ -7,6 +7,8 @@ using System.Diagnostics;
 
 using NTCPMSG.Client;
 using NTCPMSG.Event;
+using NTCPMSG.Serialize;
+
 namespace ClientTest
 {
     class TestSingleConnectionCable
@@ -64,6 +66,54 @@ namespace ClientTest
 
         static void TestASyncMessage(int count)
         {
+            Console.Write("Please input serialize type:(0:none, 1:bin, 2:xml, 3:json, 4: simplebin, 5: struct, 6: customer)");
+            string strSerializeType = Console.ReadLine();
+            int serializeType = 0;
+            int.TryParse(strSerializeType, out serializeType);
+
+            ISerialize iSerializer = null;
+            ISerialize<StructMessage> iStructMessageSerializer = null;
+            ISerialize<TestMessage> iTestMessageSerializer = null;
+
+            switch (serializeType)
+            {
+                case 0:
+                    strSerializeType = "none";
+                    break;
+                case 1:
+                    strSerializeType = "bin";
+                    iSerializer = new BinSerializer();
+                    
+                    break;
+                case 2:
+                    strSerializeType = "xml";
+                    iSerializer = new XMLSerializer(typeof(TestMessage));
+                    break;
+                case 3:
+                    strSerializeType = "json";
+                    iSerializer = new JsonSerializer(typeof(TestMessage));
+                    break;
+                case 4:
+                    iSerializer = new SimpleBinSerializer(typeof(TestMessage));
+                    strSerializeType = "simplebin";
+                    break;
+                case 5:
+                    iStructMessageSerializer = new StructSerializer<StructMessage>();
+                    strSerializeType = "struct";
+                    break;
+                case 6:
+                    iTestMessageSerializer = new TestMessageSerializer();
+                     strSerializeType = "customer";
+                    break;
+
+                default:
+                    serializeType = 0;
+                    strSerializeType = "none";
+                    break;
+            }
+
+            Console.WriteLine("Serialize type is {0}", strSerializeType);
+
             SingleConnectionCable client = new SingleConnectionCable(new IPEndPoint(IPAddress.Parse(_IPAddress), 2500), 7);
             client.ReceiveEventHandler += new EventHandler<ReceiveEventArgs>(ReceiveEventHandler);
             client.ErrorEventHandler += new EventHandler<ErrorEventArgs>(ErrorEventHandler);
@@ -76,22 +126,104 @@ namespace ClientTest
                 Stopwatch sw = new Stopwatch();
 
                 Console.WriteLine("Test async message");
-                sw.Start();
 
-                try
+                if (serializeType == 0)
                 {
-                    for (int i = 0; i < count; i++)
+                    sw.Start();
+
+                    try
                     {
-                        client.AsyncSend(10, buf);
+                        for (int i = 0; i < count; i++)
+                        {
+                            client.AsyncSend(10, buf);
+                        }
                     }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                    }
 
-                sw.Stop();
-                Console.WriteLine("Finished. Elapse : {0} ms", sw.ElapsedMilliseconds);
+                    sw.Stop();
+                    Console.WriteLine("Finished. Elapse : {0} ms", sw.ElapsedMilliseconds);
+                }
+                else
+                {
+                    TestMessage testMessage = new TestMessage()
+                    {
+                        Id = 1001,
+                        Name = "0123456789",
+                        Data = new byte[buf.Length]
+                    };
+
+                    StructMessage structMessage = new StructMessage()
+                    {
+                        Id = 1001,
+                        Name = "0123456789",
+                        //Url = "http://www.google.com",
+                        //Site = "google.com",
+                        Data = new byte[4]
+                    };
+
+                    for (int i = 0; i < testMessage.Data.Length; i++)
+                    {
+                        testMessage.Data[i] = (byte)i;
+                    }
+
+                    for (int i = 0; i < structMessage.Data.Length; i++)
+                    {
+                        structMessage.Data[i] = (byte)i;
+                    }
+
+
+                    sw.Start();
+
+                    if (serializeType == 5)
+                    {
+                        try
+                        {
+                            for (int i = 0; i < count; i++)
+                            {
+                                client.AsyncSend<StructMessage>((UInt32)(20 + serializeType), ref structMessage, iStructMessageSerializer);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e);
+                        }
+                    }
+                    else if (serializeType == 6)
+                    {
+                        try
+                        {
+                            for (int i = 0; i < count; i++)
+                            {
+                                client.AsyncSend<TestMessage>((UInt32)(20 + serializeType), ref testMessage, iTestMessageSerializer);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e);
+                        }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            for (int i = 0; i < count; i++)
+                            {
+                                client.AsyncSend((UInt32)(20 + serializeType), testMessage, iSerializer);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e);
+                        }
+                    }
+                    sw.Stop();
+                    Console.WriteLine("Finished. Elapse : {0} ms", sw.ElapsedMilliseconds);
+
+                }
+        
             }
             catch (Exception e)
             {
