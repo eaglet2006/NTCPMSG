@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.IO;
 
 namespace NTCPMSG.Serialize
 {
@@ -23,12 +24,14 @@ namespace NTCPMSG.Serialize
                 return null;
             }
 
-            System.Web.Script.Serialization.JavaScriptSerializer serializer =
-                new System.Web.Script.Serialization.JavaScriptSerializer();
-            
-            string sJSON = serializer.Serialize(obj);
+            System.Runtime.Serialization.Json.DataContractJsonSerializer serializer =
+                    new System.Runtime.Serialization.Json.DataContractJsonSerializer(_DataType);
 
-            return Encoding.UTF8.GetBytes(sJSON);
+            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+            {
+                serializer.WriteObject(ms, obj);
+                return ms.ToArray();
+            }
 #else
             throw new NotImplementedException();
 #endif
@@ -42,10 +45,12 @@ namespace NTCPMSG.Serialize
                 return null;
             }
 
-            System.Web.Script.Serialization.JavaScriptSerializer serializer =
-               new System.Web.Script.Serialization.JavaScriptSerializer();
-
-            return serializer.Deserialize(Encoding.UTF8.GetString(data), _DataType);
+            using (MemoryStream ms = new MemoryStream(data))
+            {
+                System.Runtime.Serialization.Json.DataContractJsonSerializer serializer =
+                    new System.Runtime.Serialization.Json.DataContractJsonSerializer(_DataType);
+                return serializer.ReadObject(ms);
+            }
 #else
             throw new NotImplementedException();
 #endif
@@ -62,13 +67,13 @@ namespace NTCPMSG.Serialize
         public byte[] GetBytes(ref T obj)
         {
 #if Dot40
-
-            System.Web.Script.Serialization.JavaScriptSerializer serializer =
-                new System.Web.Script.Serialization.JavaScriptSerializer();
-
-            string sJSON = serializer.Serialize(obj);
-
-            return Encoding.UTF8.GetBytes(sJSON);
+            System.Runtime.Serialization.Json.DataContractJsonSerializer serializer =
+             new System.Runtime.Serialization.Json.DataContractJsonSerializer(obj.GetType());
+            using (MemoryStream ms = new MemoryStream())
+            {
+                serializer.WriteObject(ms, obj);
+                return ms.ToArray();
+            }
 #else
             throw new NotImplementedException();
 #endif
@@ -77,10 +82,12 @@ namespace NTCPMSG.Serialize
         public T GetObject(byte[] data)
         {
 #if Dot40
-            System.Web.Script.Serialization.JavaScriptSerializer serializer =
-                      new System.Web.Script.Serialization.JavaScriptSerializer();
-
-            return serializer.Deserialize<T>(Encoding.UTF8.GetString(data));
+            using (MemoryStream ms = new MemoryStream(data))
+            {
+                System.Runtime.Serialization.Json.DataContractJsonSerializer serializer =
+                new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(T));
+                return (T)serializer.ReadObject(ms);
+            }
 #else
             throw new NotImplementedException();
 #endif
